@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../../services/api';
-import { Card, EmptyMessage, ExportButtons, INPUT, PRIMARY_BUTTON, TableWrapper, TableHead, TableBody } from '../../ui';
+import { Card, EmptyMessage, ExportButtons, INPUT, PRIMARY_BUTTON, TableWrapper, TableHead, TableBody, toast } from '../../ui';
 import type { Assignment, Evaluation, Grade, Mark, Subject, User } from '../../../types';
 
 interface MarksTabProps {
@@ -12,6 +12,8 @@ interface MarksTabProps {
   marks: Mark[];
   teacherId: string;
   notaMax: number;
+  /** Etiqueta del periodo activo, p. ej. "Periodo 1 — Primer periodo — 2026". */
+  periodLabel?: string;
   onSaved: () => Promise<void>;
 }
 
@@ -20,7 +22,7 @@ interface MarksTabProps {
  * nota en esa evaluación se actualiza, no se duplica.
  */
 export const MarksTab: React.FC<MarksTabProps> = ({
-  assignment, subject, grade, students, evaluations, marks, teacherId, notaMax, onSaved,
+  assignment, subject, grade, students, evaluations, marks, teacherId, notaMax, periodLabel, onSaved,
 }) => {
   const [selectedEvalId, setSelectedEvalId] = useState('');
   const [drafts, setDrafts] = useState<Record<string, number>>({});
@@ -69,9 +71,9 @@ export const MarksTab: React.FC<MarksTabProps> = ({
         }
       }));
       await onSaved();
-      alert('Notas registradas con éxito');
+      toast.success('Notas registradas con éxito');
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al registrar notas');
+      toast.error(err instanceof Error ? err.message : 'Error al registrar notas');
     }
   };
 
@@ -84,11 +86,11 @@ export const MarksTab: React.FC<MarksTabProps> = ({
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-gray-900">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h3 className="text-lg font-bold text-gray-900 break-words">
           Calificaciones - {subject?.nombre} ({grade?.nombre})
         </h3>
-        <ExportButtons build={exportTable} />
+        <div className="shrink-0"><ExportButtons build={exportTable} /></div>
       </div>
 
       <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
@@ -104,7 +106,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({
           <option value="">-- Seleccionar Evaluación --</option>
           {evaluations.map(ev => (
             <option key={ev.id} value={ev.id}>
-              {ev.nombre} ({ev.fecha_evaluacion}) - {ev.porcentaje}% - {ev.periodo}
+              {ev.nombre} ({ev.fecha_evaluacion}) - {ev.porcentaje}% - {periodLabel || ev.periodo}
             </option>
           ))}
         </select>
@@ -121,7 +123,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({
           <TableWrapper>
             <TableHead uppercase>
               <th className="pb-3">Estudiante</th>
-              <th className="pb-3 w-40 text-right">Calificación</th>
+              <th className="pb-3 w-32 text-right">Calificación</th>
             </TableHead>
             <TableBody>
               {students.map(student => (

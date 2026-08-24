@@ -1,4 +1,4 @@
-import { post, del, login } from './http.js';
+import { post, del, login, loginStudent } from './http.js';
 
 // Credenciales de prueba neutrales: la suite crea el super admin en la base de
 // pruebas (tests/run.js) con estos mismos valores. No son credenciales reales.
@@ -54,7 +54,7 @@ export async function buildWorld() {
     apellido: 'Test',
     institucion_id,
     activo: true,
-    ...(rol === 'student' ? { tipo_documento: 'TI' } : {}),
+    ...(rol === 'student' ? { tipo_documento: 'TI', identificacion: `${tag}.${id}` } : {}),
     ...extra,
   }, su);
 
@@ -86,9 +86,10 @@ export async function buildWorld() {
     tipo_grado: 'B',
   }, su);
 
-  // Las materias son un catálogo global (la tabla no tiene institucion_id).
-  const subjectX = await create('subjects', { nombre: `Matematicas ${id}`, descripcion: 'Test' }, su);
-  const subjectY = await create('subjects', { nombre: `Sociales ${id}`, descripcion: 'Test' }, su);
+  // Las materias pertenecen a una institución (X e Y en A, Z en B).
+  const subjectX = await create('subjects', { nombre: `Matematicas ${id}`, descripcion: 'Test', institucion_id: instA.id }, su);
+  const subjectY = await create('subjects', { nombre: `Sociales ${id}`, descripcion: 'Test', institucion_id: instA.id }, su);
+  const subjectZ = await create('subjects', { nombre: `Ciencias ${id}`, descripcion: 'Test', institucion_id: instB.id }, su);
 
   const assignA = await create('assignments', {
     profesor_id: teacherA.id,
@@ -103,10 +104,12 @@ export async function buildWorld() {
   }, su);
 
   // Periodo académico abierto por institución: el "actual" de cada una.
+  // Los números 5 y 6 se usan para no chocar con los períodos que crean las
+  // suites (1..n del año 2026) bajo la regla de duplicados (institución+año+número).
   const periodA = await create('academic_periods', {
     institucion_id: instA.id,
     nombre: 'Periodo 1',
-    numero: 1,
+    numero: 5,
     anio: 2026,
     fecha_inicio: '2026-01-15',
     fecha_fin: '2026-03-15',
@@ -116,7 +119,7 @@ export async function buildWorld() {
   const periodB = await create('academic_periods', {
     institucion_id: instB.id,
     nombre: 'Periodo 1',
-    numero: 1,
+    numero: 6,
     anio: 2026,
     fecha_inicio: '2026-01-15',
     fecha_fin: '2026-03-15',
@@ -154,10 +157,10 @@ export async function buildWorld() {
     adminA: (await login(adminA.email, PASSWORD)).token,
     teacherA: (await login(teacherA.email, PASSWORD)).token,
     teacherA2: (await login(teacherA2.email, PASSWORD)).token,
-    studentA: (await login(studentA.email, PASSWORD)).token,
+    studentA: (await loginStudent(studentA.identificacion, PASSWORD)).token,
     adminB: (await login(adminB.email, PASSWORD)).token,
     teacherB: (await login(teacherB.email, PASSWORD)).token,
-    studentB: (await login(studentB.email, PASSWORD)).token,
+    studentB: (await loginStudent(studentB.identificacion, PASSWORD)).token,
   };
 
   return {
@@ -169,7 +172,7 @@ export async function buildWorld() {
     inst: { A: instA, B: instB },
     users: { adminA, teacherA, teacherA2, studentA, studentA2, adminB, teacherB, studentB, inactiveUser },
     grades: { A: gradeA, B: gradeB },
-    subjects: { X: subjectX, Y: subjectY },
+    subjects: { X: subjectX, Y: subjectY, Z: subjectZ },
     assignments: { A: assignA },
     enrollments: { A: enrollA },
     periods: { A: periodA, B: periodB },
@@ -201,7 +204,7 @@ export async function destroyWorld(world) {
   }
   await del(`/student_grades/${world.enrollments.A.id}`, su).catch(() => {});
   await del(`/assignments/${world.assignments.A.id}`, su).catch(() => {});
-  for (const s of [world.subjects.X, world.subjects.Y]) {
+  for (const s of [world.subjects.X, world.subjects.Y, world.subjects.Z]) {
     await del(`/subjects/${s.id}`, su).catch(() => {});
   }
   for (const u of Object.values(world.users)) {

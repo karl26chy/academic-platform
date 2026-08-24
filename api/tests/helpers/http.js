@@ -40,3 +40,12 @@ export async function login(email, password) {
   }
   return res.data;
 }
+
+/** Login de estudiante: solo identificación + contraseña (sin institución). */
+export async function loginStudent(identificacion, password) {
+  const res = await post('/auth/login', { identificacion, password });
+  if (res.status !== 200) {
+    throw new Error(`Login falló para identificación ${identificacion}: ${res.status} ${JSON.stringify(res.data)}`);
+  }
+  return res.data;
+}

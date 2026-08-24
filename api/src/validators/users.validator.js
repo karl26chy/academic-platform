@@ -23,10 +23,17 @@ export async function validateUser(data, existingRow) {
     }
   }
 
-  // Al crear, el estudiante debe declarar su tipo de documento.
+  // Al crear, el estudiante debe declarar su tipo de documento y su
+  // identificación. El correo es opcional (se valida solo si se envía).
   const esEstudiante = (data.rol ?? existingRow?.rol) === 'student';
   const creando = !existingRow;
   if (creando && esEstudiante && !data.tipo_documento) {
     throw new HttpError(400, 'Tipo de documento requerido.');
+  }
+  if (creando && esEstudiante && !data.identificacion) {
+    throw new HttpError(400, 'Identificación requerida para estudiantes.');
+  }
+  if (esEstudiante && data.identificacion === '') {
+    throw new HttpError(400, 'La identificación no puede estar vacía.');
   }
 }

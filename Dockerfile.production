@@ -1,0 +1,38 @@
+# ============================================================
+#  Plataforma Educativa — contenedor único de producción
+#  Frontend React/Vite compilado + Backend Express
+#  Contexto de build: raíz del repositorio (.)
+# ============================================================
+
+# Stage 1 — Build del frontend (React/Vite)
+FROM node:20-alpine AS frontend-build
+WORKDIR /app
+COPY client/package.json client/package-lock.json ./
+RUN npm ci
+COPY client/ .
+RUN npm run build
+
+# Stage 2 — Runtime: backend + estáticos del frontend
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NODE_ENV=production
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Backend (misma estructura que api/Dockerfile)
+COPY api/package.json api/package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY api/schema.sql ./
+COPY api/src ./src
+COPY api/scripts ./scripts
+COPY api/assets ./assets
+
+# Frontend compilado (desde Stage 1)
+COPY --from=frontend-build /app/dist ./client/dist
+
+EXPOSE 5000
+
+CMD ["node", "src/server.js"]

@@ -84,7 +84,7 @@ export default async function rbacWriteSuite(world) {
     const res = await post('/users', {
       email: `nuevo${world.id}@test.local`, password: 'test1234', rol: 'student',
       nombre: 'Nuevo', apellido: 'Alumno', institucion_id: world.inst.A.id, activo: true,
-      tipo_documento: 'TI',
+      tipo_documento: 'TI', identificacion: `IDNUEVO${world.id}`,
     }, world.tokens.adminA);
     equal(res.status, 201, 'status');
     track(world, 'users', res.data.id);
@@ -134,26 +134,103 @@ export default async function rbacWriteSuite(world) {
     track(world, 'assignments', res.data.id);
   });
 
-  // ---- Comportamiento actual: tablas sin institucion_id -------------------
-  await test('un admin NO puede crear materias (la tabla no tiene institucion_id)', async () => {
+  // ---- Materias por institución --------------------------------------------
+  await test('un admin sí puede crear materias de su institución', async () => {
+    const res = await post('/subjects', { nombre: `Mat ${world.id}` }, world.tokens.adminA);
+    equal(res.status, 201, 'status');
+    equal(res.data.institucion_id, world.inst.A.id, 'la materia queda en SU institución (no confía en el body)');
+    track(world, 'subjects', res.data.id);
+  });
+
+  await test('un admin NO puede crear una materia para otra institución', async () => {
     expectError(
-      await post('/subjects', { nombre: `Mat ${world.id}` }, world.tokens.adminA),
+      await post('/subjects', { nombre: `MatB ${world.id}`, institucion_id: world.inst.B.id }, world.tokens.adminA),
       403,
       'No autorizado.'
     );
   });
 
-  await test('un admin NO puede matricular estudiantes (la tabla no tiene institucion_id)', async () => {
+  await test('un profesor no puede crear materias', async () => {
     expectError(
-      await post('/student_grades', { estudiante_id: world.users.studentA2.id, grado_id: world.grades.A.id }, world.tokens.adminA),
-      403,
-      'No autorizado.'
+      await post('/subjects', { nombre: `MatT ${world.id}` }, world.tokens.teacherA),
+      403
+    );
+  });
+
+  // ---- Coherencia de asignaciones ------------------------------------------
+  await test('una asignación no puede usar una materia de otra institución', async () => {
+    expectError(
+      await post('/assignments', {
+        profesor_id: world.users.teacherA.id, materia_id: world.subjects.Z.id,
+        grado_id: world.grades.A.id, institucion_id: world.inst.A.id,
+      }, world.tokens.adminA),
+      400,
+      'La materia no pertenece a esta institución.'
+    );
+  });
+
+  await test('una asignación no puede usar un grado de otra institución', async () => {
+    expectError(
+      await post('/assignments', {
+        profesor_id: world.users.teacherA.id, materia_id: world.subjects.X.id,
+        grado_id: world.grades.B.id, institucion_id: world.inst.A.id,
+      }, world.tokens.adminA),
+      400,
+      'El grado no pertenece a esta institución.'
+    );
+  });
+
+  await test('una asignación no puede usar un docente de otra institución', async () => {
+    expectError(
+      await post('/assignments', {
+        profesor_id: world.users.teacherB.id, materia_id: world.subjects.X.id,
+        grado_id: world.grades.A.id, institucion_id: world.inst.A.id,
+      }, world.tokens.adminA),
+      400,
+      'El docente no pertenece a esta institución.'
+    );
+  });
+
+  // ---- Matrículas (student_grades) -----------------------------------------
+  await test('un admin sí puede matricular a un estudiante de su institución', async () => {
+    const res = await post('/student_grades', {
+      estudiante_id: world.users.studentA2.id, grado_id: world.grades.A.id,
+    }, world.tokens.adminA);
+    equal(res.status, 201, 'status');
+    track(world, 'student_grades', res.data.id);
+  });
+
+  await test('un admin NO puede matricular a un estudiante de otra institución', async () => {
+    expectError(
+      await post('/student_grades', { estudiante_id: world.users.studentB.id, grado_id: world.grades.A.id }, world.tokens.adminA),
+      403
+    );
+  });
+
+  await test('un admin NO puede matricular a un estudiante en un grado de otra institución', async () => {
+    expectError(
+      await post('/student_grades', { estudiante_id: world.users.studentA.id, grado_id: world.grades.B.id }, world.tokens.adminA),
+      403
+    );
+  });
+
+  await test('una matrícula duplicada en el mismo grado devuelve 409', async () => {
+    expectError(
+      await post('/student_grades', { estudiante_id: world.users.studentA.id, grado_id: world.grades.A.id }, world.tokens.adminA),
+      409
+    );
+  });
+
+  await test('un estudiante no puede matricularse a sí mismo', async () => {
+    expectError(
+      await post('/student_grades', { estudiante_id: world.users.studentA2.id, grado_id: world.grades.A.id }, world.tokens.studentA),
+      403
     );
   });
 
   await test('el super admin sí puede matricular estudiantes', async () => {
     const res = await post('/student_grades', {
-      estudiante_id: world.users.studentA2.id, grado_id: world.grades.A.id,
+      estudiante_id: world.users.studentB.id, grado_id: world.grades.B.id,
     }, world.tokens.super);
     equal(res.status, 201, 'status');
     track(world, 'student_grades', res.data.id);

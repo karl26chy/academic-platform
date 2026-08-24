@@ -59,5 +59,12 @@ export function averageBySubject(marks: Mark[]): SubjectAverage[] {
 export const isPassing = (promedio: number, notaMinima: number): boolean =>
   promedio >= notaMinima;
 
-/** Escala de calificación según el tipo de institución. */
-export const maxScoreFor = (tipo?: string): number => (tipo === 'colegio' ? 10 : 5);
+/** Escala de calificación de una institución (tope máximo de la nota). */
+export const maxScoreFor = (institution?: { escala_maxima?: number; tipo?: string } | null): number => {
+  if (institution?.escala_maxima) return Number(institution.escala_maxima);
+  return institution?.tipo === 'universidad' ? 5 : 10;
+};
+
+/** Etiqueta de la escala, p. ej. "1-10". */
+export const scaleLabel = (escala?: number | null): string =>
+  `1-${escala ?? 10}`;

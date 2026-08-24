@@ -3,14 +3,17 @@ import { ChevronDown, ChevronRight, GraduationCap, History, Loader2 } from 'luci
 import { api } from '../../../services/api';
 import { Card, CardTitle, EmptyMessage, ExportButtons } from '../../ui';
 import { weightedAverage } from '../../../lib/grades';
+import { periodLabel } from '../../../lib/periods';
 import { documentoCompleto } from '../../../lib/documentTypes';
-import type { AcademicHistory, AcademicHistorySubject } from '../../../types';
+import type { AcademicHistory, AcademicHistorySubject, AcademicHistoryPeriod } from '../../../types';
 
 interface AcademicHistoryViewProps {
   /** ID del estudiante cuyo historial se consulta. */
   studentId: string;
   /** Estudiante opcional para el encabezado (se muestra el nombre/documento). */
   student?: { nombre?: string; apellido?: string; identificacion?: string; tipo_documento?: string } | null;
+  /** Oculta el botón de exportación (PDF/Excel); el portal del estudiante no lo muestra. */
+  hideExport?: boolean;
 }
 
 /** "2026-08-10" → "10/08/2026" (sin depender de zona horaria). */
@@ -23,12 +26,20 @@ function formatFecha(fecha?: string | null): string {
 const promedioMateria = (subject: AcademicHistorySubject): number =>
   weightedAverage(subject.evaluations.map(ev => ({ nota: ev.nota, porcentaje: ev.porcentaje ?? 0 })));
 
+/** "Periodo N — nombre — año" cuando el backend trae los datos del periodo. */
+const historyPeriodLabel = (p: AcademicHistoryPeriod): string => {
+  if (p.numero || p.nombre || p.anio) {
+    return periodLabel({ numero: p.numero ?? null, nombre: p.nombre || p.period, anio: p.anio ?? null });
+  }
+  return p.period;
+};
+
 /**
  * Historial académico individual por estudiante: Año → Periodo → Grado →
  * Materias → Evaluaciones. Se reutiliza en el portal del estudiante y en el
  * panel del administrador. Consulta el backend con el token de la sesión.
  */
-export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studentId, student }) => {
+export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studentId, student, hideExport = false }) => {
   const [data, setData] = useState<AcademicHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +80,9 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
       for (const p of y.periods) {
         for (const s of p.subjects) {
           const avg = promedioMateria(s);
-          rows.push([y.year, p.period, p.grade?.label ?? '', s.subject, 'Promedio', avg]);
+          rows.push([y.year, historyPeriodLabel(p), p.grade?.label ?? '', s.subject, 'Promedio', avg]);
           for (const ev of s.evaluations) {
-            rows.push([y.year, p.period, p.grade?.label ?? '', s.subject, ev.tipo_evaluacion, ev.nota]);
+            rows.push([y.year, historyPeriodLabel(p), p.grade?.label ?? '', s.subject, ev.tipo_evaluacion, ev.nota]);
           }
         }
       }
@@ -86,19 +97,19 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <History className="h-5 w-5 text-q10-600" />
-          <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <History className="h-5 w-5 text-q10-600 shrink-0" />
+          <div className="min-w-0">
             <CardTitle className="">Historial Académico</CardTitle>
             {student && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 truncate">
                 {student.nombre} {student.apellido} · {documentoCompleto(student.tipo_documento, student.identificacion)}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={selectedYear}
             onChange={e => setSelectedYear(e.target.value)}
@@ -107,7 +118,7 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
             <option value="all">Todos los años</option>
             {years.map(y => <option key={y.year} value={y.year}>{y.year}</option>)}
           </select>
-          <ExportButtons build={exportTable} />
+          {!hideExport && <ExportButtons build={exportTable} />}
         </div>
       </div>
 
@@ -151,7 +162,7 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
                           className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <span>
-                            {period.period}
+                            {historyPeriodLabel(period)}
                             {period.grade && (
                               <span className="ml-2 text-xs font-medium text-gray-400">Grado: {period.grade.label}</span>
                             )}
@@ -173,26 +184,28 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
                                     <span className="text-sm font-semibold text-gray-900">{subject.subject}</span>
                                     <span className="text-xs font-semibold text-q10-600">Promedio: {avg.toFixed(1)}</span>
                                   </div>
-                                  <table className="w-full text-xs">
-                                    <thead>
-                                      <tr className="text-left text-gray-400 border-b border-gray-100">
-                                        <th className="pb-1 pr-2 font-medium">Evaluación</th>
-                                        <th className="pb-1 pr-2 font-medium">Fecha</th>
-                                        <th className="pb-1 pr-2 font-medium">%</th>
-                                        <th className="pb-1 text-right font-medium">Nota</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {subject.evaluations.map(ev => (
-                                        <tr key={ev.evaluacion_id} className="border-b border-gray-50 last:border-0">
-                                          <td className="py-1 pr-2 text-gray-700">{ev.tipo_evaluacion}</td>
-                                          <td className="py-1 pr-2 text-gray-500">{formatFecha(ev.fecha_evaluacion)}</td>
-                                          <td className="py-1 pr-2 text-gray-500">{ev.porcentaje ?? '—'}</td>
-                                          <td className="py-1 text-right font-bold text-gray-900">{ev.nota.toFixed(1)}</td>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="text-left text-gray-400 border-b border-gray-100">
+                                          <th className="pb-1 pr-2 font-medium">Evaluación</th>
+                                          <th className="pb-1 pr-2 font-medium">Fecha</th>
+                                          <th className="pb-1 pr-2 font-medium">%</th>
+                                          <th className="pb-1 text-right font-medium">Nota</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                      </thead>
+                                      <tbody>
+                                        {subject.evaluations.map(ev => (
+                                          <tr key={ev.evaluacion_id} className="border-b border-gray-50 last:border-0">
+                                            <td className="py-1 pr-2 text-gray-700">{ev.tipo_evaluacion}</td>
+                                            <td className="py-1 pr-2 text-gray-500">{formatFecha(ev.fecha_evaluacion)}</td>
+                                            <td className="py-1 pr-2 text-gray-500">{ev.porcentaje ?? '—'}</td>
+                                            <td className="py-1 text-right font-bold text-gray-900">{ev.nota.toFixed(1)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
                               );
                             })}

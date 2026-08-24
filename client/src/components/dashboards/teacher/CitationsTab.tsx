@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useApp } from '../../../context/useApp';
-import { Card, CardTitle, Field, INPUT, PRIMARY_BUTTON } from '../../ui';
+import { Card, CardTitle, Field, INPUT, PRIMARY_BUTTON, toast } from '../../ui';
 import type { Assignment, User } from '../../../types';
 
 interface CitationsTabProps {
@@ -38,9 +38,9 @@ export const CitationsTab: React.FC<CitationsTabProps> = ({
       });
       setStudentId(''); setDate(''); setReason('');
       await onSaved();
-      alert('Citación enviada');
+      toast.success('Citación enviada');
     } catch {
-      alert('Error al enviar citación');
+      toast.error('Error al enviar citación');
     }
   };
 

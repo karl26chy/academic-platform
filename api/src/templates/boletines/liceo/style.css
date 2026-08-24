@@ -1,0 +1,291 @@
+/* Reseteo general */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+body {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Tarjeta principal estilo hoja de papel A4 */
+.boletin-card {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 900px;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+/* Encabezado con detalles Dorados y Rojo Granate */
+.header {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    border-top: 4px solid #C29227;
+    border-bottom: 2px solid #C29227;
+    padding-top: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+    background-color: #FCFAEF;
+}
+
+.logo-colegio {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-right: 16px;
+    flex-shrink: 0;
+}
+
+.header-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.nombre-colegio {
+    color: #7A0C16;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.lema {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #4b5563;
+    margin-top: 2px;
+}
+
+.resolucion {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.titulo-informe {
+    font-size: 1.1rem;
+    color: #111827;
+    margin-top: 10px;
+    font-weight: 700;
+}
+
+.periodo-tag {
+    display: inline-block;
+    background-color: #C29227;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 3px 12px;
+    border-radius: 12px;
+    margin-top: 6px;
+}
+
+/* Secciones generales */
+.section-container {
+    margin-bottom: 18px;
+}
+
+.section-title {
+    font-size: 0.8rem;
+    background-color: #FDFBF7;
+    color: #7A0C16;
+    padding: 5px 8px;
+    border-left: 4px solid #C29227;
+    border-bottom: 1px solid #EEDEA8;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+/* Tablas */
+.info-table, .desempeno-table, .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.info-table td {
+    padding: 6px 8px;
+    border: 1px solid #EEDEA8;
+}
+
+.info-label {
+    background-color: #F9F6EE;
+    font-weight: bold;
+    color: #7A0C16;
+    width: 20%;
+}
+
+.info-value {
+    color: #111827;
+}
+
+.desempeno-table th {
+    background-color: #52060D;
+    color: #ffffff;
+    padding: 7px 5px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    border: 1px solid #380308;
+}
+
+.desempeno-table td {
+    padding: 6px 5px;
+    border: 1px solid #e5e7eb;
+}
+
+.desempeno-table tbody tr:nth-child(even) {
+    background-color: #FDFBF7;
+}
+
+/* Utilidades de texto */
+.center { text-align: center; }
+.right { text-align: right; }
+.bold { font-weight: bold; }
+
+.nota-baja {
+    color: #b91c1c;
+}
+
+.row-promedio {
+    background-color: #FAF2E1 !important;
+    border-top: 2px solid #C29227;
+    border-bottom: 2px solid #C29227;
+}
+
+.row-promedio td {
+    color: #7A0C16;
+}
+
+/* Badges de estado */
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.badge.aprobado {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge.reprobado {
+    background-color: hsl(0, 0%, 100%);
+    color: #eb0404;
+}
+
+/* Cuadrícula inferior (Asistencia, Observaciones, Escala) */
+.bottom-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.bottom-box {
+    flex: 1;
+    border: 1px solid #EEDEA8;
+    border-radius: 6px;
+    padding: 10px;
+    background-color: #FDFBF7;
+}
+
+.box-title {
+    font-size: 0.75rem;
+    color: #7A0C16;
+    border-bottom: 1px solid #C29227;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.mini-table td {
+    padding: 4px 0;
+    border-bottom: 1px dashed #EEDEA8;
+}
+
+.highlight-row {
+    background-color: #FAF2E1;
+}
+
+.observaciones-texto {
+    font-size: 0.73rem;
+    line-height: 1.45;
+    color: #374151;
+    text-align: justify;
+}
+
+.escala-lista {
+    list-style: none;
+    font-size: 0.73rem;
+}
+
+.escala-lista li {
+    padding: 3px 0;
+    border-bottom: 1px dashed #EEDEA8;
+}
+
+/* Firmas */
+.firmas-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 35px;
+    margin-bottom: 15px;
+}
+
+.firma-box {
+    text-align: center;
+    width: 200px;
+}
+
+.linea-firma {
+    border-bottom: 1px solid #C29227;
+    margin-bottom: 6px;
+}
+
+.cargo {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #7A0C16;
+}
+
+.nombre {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+/* Pie de página */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #EEDEA8;
+    padding-top: 8px;
+    font-size: 0.68rem;
+    color: #9ca3af;
+}
+
+/* Adaptación para impresión */
+@media print {
+    body {
+        background-color: #ffffff;
+        padding: 0;
+    }
+    .boletin-card {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+        padding: 0;
+    }
+}

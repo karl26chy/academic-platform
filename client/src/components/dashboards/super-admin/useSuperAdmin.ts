@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useApp } from '../../../context/useApp';
+import { toast } from '../../ui';
 import { fullName, gradeLabel } from '../../../lib/people';
 
 export interface Feedback {
@@ -11,11 +12,9 @@ export interface Feedback {
 export function useSuperAdmin() {
   const { institutions, users, grades, subjects, studentGrades, assignments, refreshData } = useApp();
 
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const showMsg = useCallback((type: Feedback['type'], text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 4000);
+const showMsg = useCallback((type: Feedback['type'], text: string) => {
+    if (type === 'success') toast.success(text);
+    else toast.error(text);
   }, []);
 
   const getGradeLabel = (gradeId: string) =>
@@ -40,7 +39,6 @@ export function useSuperAdmin() {
     assignments,
     studentGrades,
     refreshData,
-    feedback,
     showMsg,
     getGradeLabel,
     getSubjectLabel,

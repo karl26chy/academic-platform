@@ -25,8 +25,12 @@ const COLLECTION_TABLES = [
 
 /**
  * Siembra los periodos académicos del año actual para cada institución que
- * todavía no los tenga. Es idempotente y corre en cada arranque, así los
- * docentes pueden trabajar por periodo sin una pantalla administrativa previa.
+ * todavía no los tenga. Es idempotente y corre en cada arranque.
+ *
+ * Mantiene la invariante de la plataforma: UNA SOLA periodo abierto por
+ * institución. Los periodos faltantes nacen CERRADOS; si la institución se
+ * queda sin abierto, se abre el primero (año ascendente, número ascendente);
+ * si por estado heredado hay más de uno abierto, se deja solo el primero.
  */
 async function seedAcademicPeriods(client) {
   const anio = new Date().getFullYear();
@@ -43,9 +47,32 @@ async function seedAcademicPeriods(client) {
       const id = `p-${inst.id}-${anio}-${numero}`;
       await client.query(
         `INSERT INTO academic_periods (id, "institucion_id", nombre, numero, anio, activo)
-         VALUES ($1, $2, $3, $4, $5, true)`,
+         VALUES ($1, $2, $3, $4, $5, false)`,
         [id, inst.id, `Periodo ${numero}`, numero, anio]
       );
+    }
+
+    const { rows: abiertos } = await client.query(
+      `SELECT id FROM academic_periods
+       WHERE "institucion_id" = $1 AND activo
+       ORDER BY "anio" ASC, "numero" ASC`,
+      [inst.id]
+    );
+
+    if (abiertos.length === 0) {
+      const { rows: primero } = await client.query(
+        `SELECT id FROM academic_periods
+         WHERE "institucion_id" = $1
+         ORDER BY "anio" ASC, "numero" ASC LIMIT 1`,
+        [inst.id]
+      );
+      if (primero[0]) {
+        await client.query('UPDATE academic_periods SET activo = true WHERE id = $1', [primero[0].id]);
+      }
+    } else if (abiertos.length > 1) {
+      for (const extra of abiertos.slice(1)) {
+        await client.query('UPDATE academic_periods SET activo = false WHERE id = $1', [extra.id]);
+      }
     }
   }
 }

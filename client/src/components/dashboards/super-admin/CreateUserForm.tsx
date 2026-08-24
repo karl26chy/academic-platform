@@ -55,15 +55,20 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !nombre || !apellido || !selectedInstId || !password) return;
+    if (!nombre || !apellido || !selectedInstId || !password) return;
     if (rol === 'student' && !tipoDocumento) {
       showMsg('error', 'Selecciona el tipo de documento.');
+      return;
+    }
+    if (rol === 'student' && !identificacion.trim()) {
+      showMsg('error', 'El número de identificación es obligatorio para estudiantes.');
       return;
     }
 
     try {
       const created = await api.createUser({
-        email, password, rol, nombre, apellido,
+        email: email || undefined,
+        password, rol, nombre, apellido,
         identificacion: identificacion || undefined,
         tipo_documento: rol === 'student' ? tipoDocumento : undefined,
         genero: genero || undefined,
@@ -100,7 +105,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       </Field>
 
       <form onSubmit={handleCreate} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Nombre">
             <input type="text" required value={nombre} onChange={e => setNombre(e.target.value)} className={INPUT} />
           </Field>
@@ -109,11 +114,14 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           </Field>
         </div>
 
-        <Field label="Email">
+        <Field label="Email (opcional)">
           <input
-            type="email" required value={email} onChange={e => setEmail(e.target.value)}
+            type="email" value={email} onChange={e => setEmail(e.target.value)}
             placeholder="usuario@colegio.com" className={INPUT}
           />
+          <p className="text-[11px] text-gray-400 mt-1">
+            Obligatorio para que el estudiante pueda iniciar sesión por correo; siempre puede hacerlo por identificación.
+          </p>
         </Field>
 
         <Field label="Contraseña">
@@ -146,7 +154,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
         {rol === 'student' && (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Tipo de documento">
                 <select required value={tipoDocumento} onChange={e => setTipoDocumento(e.target.value)} className={INPUT}>
                   <option value="">-- Seleccionar --</option>
@@ -157,13 +165,13 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               </Field>
               <Field label="Número de documento">
                 <input
-                  type="text" value={identificacion} onChange={e => setIdentificacion(e.target.value)}
+                  type="text" required value={identificacion} onChange={e => setIdentificacion(e.target.value)}
                   placeholder="CC/TI" className={INPUT}
                 />
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Género">
                 <select value={genero} onChange={e => setGenero(e.target.value)} className={INPUT}>
                   <option value="">--</option>
@@ -175,7 +183,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="EPS">
                 <input
                   type="text" value={eps} onChange={e => setEps(e.target.value)}
@@ -201,7 +209,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
             <div className="border-t border-gray-100 pt-3">
               <p className="text-xs font-semibold text-gray-500 mb-2">Contacto de Emergencia</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {(['nombre', 'telefono', 'relacion'] as const).map(campo => (
                   <div key={campo}>
                     <label className="block text-[10px] text-gray-400 mb-1">

@@ -85,6 +85,16 @@ export async function institutionOfUser(userId) {
   return rows[0] ? rows[0].institucion_id : null;
 }
 
+export async function institutionOfSubject(subjectId) {
+  const { rows } = await pool.query('SELECT "institucion_id" FROM subjects WHERE id = $1', [subjectId]);
+  return rows[0] ? rows[0].institucion_id : null;
+}
+
+export async function institutionById(institutionId) {
+  const { rows } = await pool.query('SELECT id FROM institutions WHERE id = $1', [institutionId]);
+  return rows[0] || null;
+}
+
 export async function hasAssignment(teacherId, subjectId, gradeId) {
   const { rows } = await pool.query(
     'SELECT 1 FROM assignments WHERE "profesor_id" = $1 AND "materia_id" = $2 AND "grado_id" = $3',
@@ -95,10 +105,16 @@ export async function hasAssignment(teacherId, subjectId, gradeId) {
 
 export async function gradingScaleFor(gradeId) {
   const { rows } = await pool.query(
-    'SELECT i."tipo" FROM grades g JOIN institutions i ON i.id = g."institucion_id" WHERE g.id = $1',
+    `SELECT i."escala_maxima", i."tipo"
+     FROM grades g JOIN institutions i ON i.id = g."institucion_id"
+     WHERE g.id = $1`,
     [gradeId]
   );
-  return rows[0] ? rows[0].tipo : null;
+  const row = rows[0];
+  if (!row) return null;
+  // La escala configurada manda; si falta (institución previa a la migración),
+  // se cae al default por tipo: universidad 1-5, resto 1-10.
+  return Number(row.escala_maxima ?? (row.tipo === 'universidad' ? 5 : 10));
 }
 
 // --- Dependencias para borrados seguros ------------------------------------
@@ -156,12 +172,13 @@ export async function countSubjectDependencies(subjectId) {
   return rows[0];
 }
 
-/** Evaluaciones y notas asociadas a un periodo académico (borrados seguros). */
+/** Evaluaciones, notas y asistencias asociadas a un periodo (borrados seguros). */
 export async function countPeriodDependencies(periodId) {
   const { rows } = await pool.query(
     `SELECT
        (SELECT COUNT(*) FROM evaluations WHERE "periodo_id" = $1)::int AS evaluaciones,
-       (SELECT COUNT(*) FROM marks WHERE "periodo_id" = $1)::int AS notas`,
+       (SELECT COUNT(*) FROM marks WHERE "periodo_id" = $1)::int AS notas,
+       (SELECT COUNT(*) FROM attendance WHERE "periodo_id" = $1)::int AS asistencias`,
     [periodId]
   );
   return rows[0];
@@ -200,9 +217,12 @@ export async function academicHistory(studentId, { anio, periodo, grado_id, mate
     `SELECT
        m.id, m.estudiante_id, m.materia_id, m.grado_id, m.evaluacion_id,
        m.tipo_evaluacion, m.fecha_evaluacion, m.porcentaje, m.nota, m.periodo, m.anio,
+       m."periodo_id",
+       ap.numero AS periodo_numero, ap.nombre AS periodo_nombre, ap.anio AS periodo_anio,
        g.nombre AS grado_nombre, g.tipo_grado,
        s.nombre AS materia_nombre
      FROM marks m
+     LEFT JOIN academic_periods ap ON ap.id = m."periodo_id"
      LEFT JOIN grades g ON g.id = m.grado_id
      LEFT JOIN subjects s ON s.id = m.materia_id
      WHERE ${filtros.join(' AND ')}
@@ -230,6 +250,22 @@ export async function evaluationById(evaluationId) {
   return rows[0] || null;
 }
 
+/**
+ * Suma de porcentajes de las evaluaciones de una materia, grado y periodo.
+ * `excludeId` excluye la evaluación que se está editando (null para creación).
+ * Devuelve 0 cuando no hay evaluaciones.
+ */
+export async function sumEvaluationPercentages({ materia_id, grado_id, periodo_id, excludeId = null }) {
+  const { rows } = await pool.query(
+    `SELECT COALESCE(SUM(porcentaje), 0)::numeric AS total
+     FROM evaluations
+     WHERE "materia_id" = $1 AND "grado_id" = $2 AND "periodo_id" = $3
+       AND ($4::text IS NULL OR id <> $4)`,
+    [materia_id, grado_id, periodo_id, excludeId]
+  );
+  return Number(rows[0].total);
+}
+
 /** Periodo académico por id. */
 export async function periodById(periodId) {
   const { rows } = await pool.query('SELECT * FROM academic_periods WHERE id = $1', [periodId]);
@@ -254,6 +290,21 @@ export async function periodsOfInstitution(institucionId) {
     [institucionId]
   );
   return rows;
+}
+
+/**
+ * ¿Existe ya un período con la misma institución + año + número?
+ * `excludeId` excluye el período que se está editando (null para creación).
+ */
+export async function periodDuplicateOf({ institucion_id, anio, numero, excludeId = null }) {
+  const { rows } = await pool.query(
+    `SELECT id FROM academic_periods
+     WHERE "institucion_id" = $1 AND anio = $2 AND numero = $3
+       AND ($4::text IS NULL OR id <> $4)
+     LIMIT 1`,
+    [institucion_id, anio, numero, excludeId]
+  );
+  return rows[0] || null;
 }
 
 /** Periodos abiertos (activo) de una institución. */
@@ -335,6 +386,7 @@ export async function countInstitutionDependencies(instId) {
     `SELECT
        (SELECT COUNT(*) FROM users WHERE "institucion_id" = $1)::int AS usuarios,
        (SELECT COUNT(*) FROM grades WHERE "institucion_id" = $1)::int AS grados,
+       (SELECT COUNT(*) FROM subjects WHERE "institucion_id" = $1)::int AS materias,
        (SELECT COUNT(*) FROM assignments WHERE "institucion_id" = $1)::int AS asignaciones,
        (SELECT COUNT(*) FROM evaluations WHERE "institucion_id" = $1)::int AS evaluaciones,
        (SELECT COUNT(*) FROM student_grades WHERE "grado_id" IN (SELECT id FROM grades WHERE "institucion_id" = $1))::int

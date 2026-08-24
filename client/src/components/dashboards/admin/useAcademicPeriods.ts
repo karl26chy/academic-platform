@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../../../services/api';
+import { toast } from '../../ui';
 import type { AcademicPeriod } from '../../../types';
 
 export interface Feedback {
@@ -37,11 +38,10 @@ export function useAcademicPeriods() {
   const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const showMsg = useCallback((type: Feedback['type'], text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 4000);
+const showMsg = useCallback((type: Feedback['type'], text: string) => {
+    if (type === 'success') toast.success(text);
+    else toast.error(text);
   }, []);
 
   const load = useCallback(async () => {
@@ -123,7 +123,6 @@ export function useAcademicPeriods() {
     periods,
     loading,
     error,
-    feedback,
     create,
     update,
     openPeriod,

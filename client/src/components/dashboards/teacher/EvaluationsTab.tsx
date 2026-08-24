@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Calendar, Edit3, Lock, Plus, Trash2 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { Card, CardTitle, EmptyMessage, Field, INPUT, PRIMARY_BUTTON, SECONDARY_BUTTON } from '../../ui';
+import { Card, CardTitle, EmptyMessage, Field, INPUT, PRIMARY_BUTTON, SECONDARY_BUTTON, toast } from '../../ui';
+import { periodLabel } from '../../../lib/periods';
 import type { AcademicPeriod, Assignment, Evaluation } from '../../../types';
 
 interface EvaluationsTabProps {
@@ -52,9 +53,9 @@ export const EvaluationsTab: React.FC<EvaluationsTabProps> = ({
       setForm(VACIO);
       setEditingId(null);
       await onSaved();
-      alert(editingId ? 'Evaluación actualizada' : 'Evaluación creada');
+      toast.success(editingId ? 'Evaluación actualizada' : 'Evaluación creada');
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al guardar evaluación');
+      toast.error(err instanceof Error ? err.message : 'Error al guardar evaluación');
     }
   };
 
@@ -73,7 +74,7 @@ export const EvaluationsTab: React.FC<EvaluationsTabProps> = ({
       await api.deleteEvaluation(id);
       await onSaved();
     } catch {
-      alert('Error al eliminar');
+      toast.error('Error al eliminar');
     }
   };
 
@@ -102,7 +103,7 @@ export const EvaluationsTab: React.FC<EvaluationsTabProps> = ({
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Fecha de Evaluación">
                 <input
                   type="date" required value={form.fecha}
@@ -134,7 +135,9 @@ export const EvaluationsTab: React.FC<EvaluationsTabProps> = ({
       </Card>
 
       <Card>
-        <CardTitle className="mb-6">Evaluaciones del Periodo</CardTitle>
+        <CardTitle className="mb-6">
+          Evaluaciones del Periodo {period ? <span className="text-q10-600">— {periodLabel(period)}</span> : null}
+        </CardTitle>
         <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
           {evaluations.length === 0 ? (
             <EmptyMessage>No hay evaluaciones en este periodo para esta materia/grado.</EmptyMessage>

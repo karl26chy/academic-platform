@@ -9,6 +9,8 @@
     "dev": "node --watch src/server.js",
     "setup": "node scripts/setup.js",
     "seed": "node scripts/setup.js",
+    "seed:local": "node scripts/seed-local.js",
+    "verify:isolation": "node scripts/verify-isolation.js",
     "smoke": "node scripts/smoke.js",
     "test": "node tests/run.js"
   },
@@ -18,7 +20,9 @@
     "dotenv": "^16.4.7",
     "express": "^4.22.2",
     "express-rate-limit": "^7.5.0",
+    "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "puppeteer-core": "^22.15.0"
   }
 }

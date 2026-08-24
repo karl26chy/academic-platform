@@ -62,7 +62,7 @@ export default async function validationSuite(world) {
 
   await test('en una universidad la escala baja a 0-5', async () => {
     const evalB = (await post('/evaluations', {
-      institucion_id: world.inst.B.id, materia_id: world.subjects.X.id,
+      institucion_id: world.inst.B.id, materia_id: world.subjects.Z.id,
       grado_id: world.grades.B.id, nombre: `EvalB ${world.id}`,
       fecha_evaluacion: '2026-04-01', porcentaje: 20, periodo: 'Periodo 1', anio: '2026',
       creado_por: world.users.adminB.id,
@@ -71,7 +71,7 @@ export default async function validationSuite(world) {
 
     expectError(
       await post('/marks', {
-        estudiante_id: world.users.studentB.id, materia_id: world.subjects.X.id,
+        estudiante_id: world.users.studentB.id, materia_id: world.subjects.Z.id,
         grado_id: world.grades.B.id, evaluacion_id: evalB.id, nota: 6,
       }, world.tokens.adminB),
       400,
@@ -79,7 +79,7 @@ export default async function validationSuite(world) {
     );
 
     const ok5 = await post('/marks', {
-      estudiante_id: world.users.studentB.id, materia_id: world.subjects.X.id,
+      estudiante_id: world.users.studentB.id, materia_id: world.subjects.Z.id,
       grado_id: world.grades.B.id, evaluacion_id: evalB.id, nota: 4.5,
       porcentaje: 20, periodo: 'Periodo 1',
     }, world.tokens.adminB);
@@ -130,6 +130,7 @@ export default async function validationSuite(world) {
     const res = await post('/users', {
       email, password: 'test1234', rol: 'student', nombre: 'E', apellido: 'S',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'TI',
+      identificacion: `IDESP${world.id}`,
     }, world.tokens.adminA);
     equal(res.status, 201, 'status');
     equal(res.data.email, email.trim(), 'email recortado');
@@ -141,7 +142,7 @@ export default async function validationSuite(world) {
       await post('/users', {
         email: world.users.studentA.email, password: 'x', rol: 'student',
         nombre: 'Dup', apellido: 'Dup', institucion_id: world.inst.A.id,
-        tipo_documento: 'TI',
+        tipo_documento: 'TI', identificacion: `IDDUP${world.id}`,
       }, world.tokens.adminA),
       409,
       'Ya existe un registro con esos datos.'

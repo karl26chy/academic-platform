@@ -26,6 +26,7 @@ const scopeByResource = {
   assignments: mismaInstitucion,
   evaluations: mismaInstitucion,
   academic_periods: mismaInstitucion,
+  subjects: mismaInstitucion,
 
   institutions: ({ instId }) => ({ where: '"id" = $1', params: [instId] }),
 

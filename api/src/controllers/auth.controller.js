@@ -15,8 +15,8 @@ const responder = (res, err, contexto) => {
 
 export async function login(req, res) {
   try {
-    const { email, password } = req.body || {};
-    res.json(await authService.login(email, password));
+    const { email, identificacion, password } = req.body || {};
+    res.json(await authService.login({ email, identificacion, password }));
   } catch (err) {
     responder(res, err, 'Error en login');
   }

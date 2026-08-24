@@ -7,21 +7,21 @@ const FIELD =
 
 export const Login: React.FC = () => {
   const { login, authError } = useApp();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!identifier || !password) return;
     setLoading(true);
-    await login(email, password);
+    await login(identifier, password);
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-q10-900 via-q10-800 to-q10-950">
+    <div className="min-h-screen flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-q10-900 via-q10-800 to-q10-950">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="flex justify-center">
           <div className="p-3 bg-q10-50 border border-q10-200 rounded-2xl text-q10-600">
@@ -46,20 +46,23 @@ export const Login: React.FC = () => {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Correo Electrónico
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                Correo o Identificación
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <Mail className="h-5 w-5" />
                 </div>
                 <input
-                  id="email" name="email" type="email" required
-                  value={email} onChange={e => setEmail(e.target.value)}
+                  id="identifier" name="identifier" type="text" required
+                  value={identifier} onChange={e => setIdentifier(e.target.value)}
                   className={FIELD}
-                  placeholder="ejemplo@plataforma.com"
+                  placeholder="correo@plataforma.com o número de identificación"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Los estudiantes inician sesión con su número de identificación.
+              </p>
             </div>
 
             <div>

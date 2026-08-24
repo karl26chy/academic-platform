@@ -61,26 +61,68 @@ docker compose up -d --build
 
 El primer arranque crea el esquema en PostgreSQL y siembra los datos de `api/db.json` automáticamente. Los datos persisten en el volumen `pgdata`.
 
-## Desarrollo Local
+## Desarrollo Local (aislado de producción)
 
-### 1. API
+> ⚠️ **Nunca uses Supabase producción en desarrollo.** El guard en `api/src/config/index.js` bloquea el arranque si `DATABASE_URL` contiene `supabase.co` con `NODE_ENV != production`.
 
-Necesitas PostgreSQL corriendo. Luego:
+### Opción A — Docker (recomendado, un comando)
 
 ```bash
-cd api
-cp .env.example .env      # ajusta DATABASE_URL si es necesario
-npm install
-npm run setup             # crea tablas + seed inicial (solo si la DB está vacía)
-npm run dev               # http://localhost:5000
+# 1. Variables locales (ya existe .env.local; si no: cp .env.local.example .env.local)
+# 2. Levanta PostgreSQL + API + Client
+docker compose -f docker-compose.local.yml up -d --build
+
+# Backend → http://localhost:5000
+# Frontend (Vite) → http://localhost:5173
+# PostgreSQL → localhost:55432  (usuario: platform, DB: platform)
+
+# Seed de desarrollo (institución demo + usuarios + notas)
+docker compose -f docker-compose.local.yml exec api npm run seed:local
+# o desde el host:
+DATABASE_URL=postgresql://platform:platform@localhost:55432/platform npm run seed:local --prefix api
+
+# Verificar aislamiento
+npm run verify:isolation --prefix api
+docker compose -f docker-compose.local.yml logs -f
+
+# Detener
+docker compose -f docker-compose.local.yml down
 ```
 
-### 2. Cliente
+Credenciales del seed local (`api/scripts/seed-local.js`):
+- Super Admin: `super@local.test` / `Super123!` (sin subdominio)
+- Admin: `admin@demo-local.test` / `Admin123!` (subdominio `demo-local`)
+- Docentes: `doc1@demo-local.test` / `Doc123!`, `doc2@demo-local.test` / `Doc123!`
+- Estudiantes: `est1@demo-local.test`..`est10@demo-local.test` / `Est123!` (login por identificación `EST-DEMO-001`..)
+
+### Opción B — Sin Docker (API + Client directo)
 
 ```bash
+# API
+cd api
+npm install
+# DATABASE_URL local: localhost:55432 (NO Supabase)
+DATABASE_URL=postgresql://platform:platform@localhost:55432/platform npm run setup
+DATABASE_URL=postgresql://platform:platform@localhost:55432/platform npm run seed:local
+DATABASE_URL=postgresql://platform:platform@localhost:55432/platform npm run dev  # http://localhost:5000
+
+# Cliente
 cd client
 npm install
-npm run dev               # http://localhost:5173 (proxya /api → localhost:5000)
+npm run dev  # http://localhost:5173 (proxya /api → localhost:5000)
+```
+
+### Variables de entorno local
+
+- `/.env.local` (raíz) — estándar del proyecto. No se commitea (`.gitignore: .env.*`). Plantilla: `.env.local.example`.
+- `api/.env.example` — `DATABASE_URL=postgresql://platform:platform@localhost:55432/platform?sslmode=disable`.
+- `api/.env` y `/.env` están **vaciados a propósito** para que un arranque sin env falle claro en vez de tocar producción.
+
+### Overlay remoto (solo debug intencional contra Supabase)
+
+```bash
+# Requiere profile explícito + NODE_ENV=production (el guard bloquea sin él)
+docker compose -f docker-compose.local.yml -f docker-compose.supabase-remote.yml --profile supabase-remote up -d --build api client
 ```
 
 ## Pruebas

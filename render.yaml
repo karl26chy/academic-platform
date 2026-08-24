@@ -1,17 +1,16 @@
-# Render Blueprint - Plataforma Educativa (Fase 1, sin dominio propio)
-# Arquitectura: GitHub -> platform-frontend (Nginx) -> platform-api (Node) -> Supabase
+# Render Blueprint - Plataforma Educativa (contenedor único)
+# Arquitectura: GitHub -> un solo Web Service (Dockerfile.production)
+#   -> Express sirve el frontend compilado (client/dist) + la API bajo /api
+#   -> Supabase/PostgreSQL.
 # Sin secretos reales: DATABASE_URL se pide al crear el blueprint (sync: false)
 # y JWT_SECRET se genera con generateValue.
 
 services:
-  # ============================================================
-  # Backend Node/Express
-  # ============================================================
   - type: web
-    name: platform-api
+    name: platform
     runtime: docker
-    dockerfilePath: api/Dockerfile
-    dockerContext: api
+    dockerfilePath: Dockerfile.production
+    dockerContext: .
     plan: free
     region: oregon
     healthCheckPath: /api/health
@@ -25,25 +24,4 @@ services:
       - key: JWT_EXPIRES_IN
         value: 8h
       - key: CORS_ORIGIN
-        fromService:
-          name: platform-frontend
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
-
-  # ============================================================
-  # Frontend React + Nginx (proxy /api -> backend)
-  # ============================================================
-  - type: web
-    name: platform-frontend
-    runtime: docker
-    dockerfilePath: client/Dockerfile
-    dockerContext: client
-    plan: free
-    region: oregon
-    healthCheckPath: /
-    envVars:
-      - key: BACKEND_URL
-        fromService:
-          name: platform-api
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: ""

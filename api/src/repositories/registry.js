@@ -10,7 +10,7 @@
  */
 export const RESOURCES = {
   institutions: {
-    cols: ['id', 'nombre', 'subdominio', 'tipo', 'nota_minima_aprobacion', 'activa'],
+    cols: ['id', 'nombre', 'subdominio', 'tipo', 'escala_maxima', 'nota_minima_aprobacion', 'activa'],
   },
   users: {
     cols: [
@@ -35,11 +35,11 @@ export const RESOURCES = {
     secret: ['password'],
   },
   grades: { cols: ['id', 'institucion_id', 'nombre', 'tipo_grado'] },
-  subjects: { cols: ['id', 'nombre', 'descripcion'] },
+  subjects: { cols: ['id', 'institucion_id', 'nombre', 'descripcion'] },
   assignments: { cols: ['id', 'profesor_id', 'materia_id', 'grado_id', 'institucion_id'] },
   student_grades: { cols: ['id', 'estudiante_id', 'grado_id'] },
   attendance: {
-    cols: ['id', 'estudiante_id', 'materia_id', 'grado_id', 'fecha', 'estado', 'registrado_por'],
+    cols: ['id', 'estudiante_id', 'materia_id', 'grado_id', 'fecha', 'estado', 'periodo_id', 'registrado_por'],
   },
   marks: {
     cols: [

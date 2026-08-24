@@ -1,0 +1,32 @@
+# ============================================================
+#  ⚠️  OVERLAY REMOTO — SOLO PARA DEBUG CONTRA SUPABASE REAL
+#  NO usar en desarrollo diario. El desarrollo local SIEMPRE usa
+#  PostgreSQL en Docker (docker-compose.local.yml) aislado de prod.
+#
+#  Este archivo inyecta DATABASE_URL de Supabase sobre el stack local.
+#  Requiere profile explícito: sin --profile supabase-remote no se activa.
+#
+#  Uso INTENCIONAL contra Supabase:
+#    docker compose -f docker-compose.local.yml -f docker-compose.supabase-remote.yml --profile supabase-remote up -d --build api client
+#  Si quieres evitar levantar db local al usar Supabase:
+#    docker compose -f docker-compose.local.yml -f docker-compose.supabase-remote.yml --profile supabase-remote up -d api client --no-deps
+#
+#  La DB remota maneja SSL auto en api/src/db/pool.js si no hay ?sslmode=disable.
+#  El guard anti-producción en api/src/config/index.js BLOQUEA este overlay
+#  si NODE_ENV != production (por eso este servicio fuerza NODE_ENV=production).
+# ============================================================
+services:
+  api:
+    profiles: ["supabase-remote"]
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+      JWT_EXPIRES_IN: 8h
+      CORS_ORIGIN: ""
+    # Nota: api mantiene depends_on db (local) pero no se usa; la conexión real es a Supabase.
+  client:
+    profiles: ["supabase-remote"]
+    depends_on:
+      - api

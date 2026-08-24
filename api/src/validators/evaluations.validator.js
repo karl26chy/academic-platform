@@ -3,6 +3,7 @@ import {
   periodById,
   periodOfInstitutionByNameAndYear,
   openPeriodsOfInstitution,
+  sumEvaluationPercentages,
 } from '../repositories/resource.repository.js';
 
 /**
@@ -50,5 +51,34 @@ export async function validateEvaluation(data, existingRow) {
 
   if (periodo && periodo.activo === false) {
     throw new HttpError(409, 'El periodo está cerrado; no se pueden crear o modificar evaluaciones.');
+  }
+
+  if (data.porcentaje !== undefined) {
+    const invalido =
+      typeof data.porcentaje !== 'number' ||
+      Number.isNaN(data.porcentaje) ||
+      data.porcentaje <= 0 ||
+      data.porcentaje > 100;
+    if (invalido) throw new HttpError(400, 'El porcentaje debe estar entre 1 y 100.');
+  }
+
+  const materiaId = data.materia_id ?? existingRow?.materia_id;
+  const gradoId = data.grado_id ?? existingRow?.grado_id;
+  const periodoIdResuelto = data.periodo_id ?? existingRow?.periodo_id;
+  if (data.porcentaje !== undefined && materiaId && gradoId && periodoIdResuelto) {
+    const suma = await sumEvaluationPercentages({
+      materia_id: materiaId,
+      grado_id: gradoId,
+      periodo_id: periodoIdResuelto,
+      excludeId: existingRow?.id ?? null,
+    });
+    const disponible = 100 - suma;
+    if (data.porcentaje > disponible) {
+      throw new HttpError(
+        409,
+        `La suma de porcentajes de esta materia, grado y período no puede superar 100%. ` +
+          `Actual: ${suma}% — solo quedan ${Math.max(disponible, 0)}%.`
+      );
+    }
   }
 }

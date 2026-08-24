@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boletín Académico - {{institution.nombre}}</title>
+</head>
+<body>
+
+    <div class="boletin-card">
+        <!-- ENCABEZADO INSTITUCIONAL -->
+        <header class="header">
+            <img class="logo-colegio" src=".img/image0.webp" alt="Escudo institucional">
+            <div class="header-content">
+                <h1 class="nombre-colegio">{{institution.nombre}}</h1>
+                <p class="lema">"LO IMPORTANTE NO ES LLEGAR PRIMERO SINO SABER LLEGAR — LÍDERES DEL FUTURO"</p>
+                <h2 class="titulo-informe">INFORME ACADÉMICO Y CONVIVENCIAL</h2>
+            </div>
+        </header>
+
+        <!-- INFORMACIÓN DEL ESTUDIANTE -->
+        <section class="section-container">
+            <h3 class="section-title">INFORMACIÓN DEL ESTUDIANTE</h3>
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">ESTUDIANTE</td>
+                    <td class="info-value">{{student.nombre}} {{student.apellido}}</td>
+                    <td class="info-label">GRADO</td>
+                    <td class="info-value">{{grade.nombre}}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">IDENTIFICACIÓN</td>
+                    <td class="info-value">{{student.tipo_documento}} {{student.identificacion}}</td>
+                    <td class="info-label">AÑO LECTIVO</td>
+                    <td class="info-value">{{year}}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">FECHA DE GENERACIÓN</td>
+                    <td class="info-value" colspan="3">{{fechaGeneracion}}</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- DESEMPEÑO ACADÉMICO -->
+        <section class="section-container">
+            <h3 class="section-title">DESEMPEÑO ACADÉMICO</h3>
+            <table class="desempeno-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ÁREA / ASIGNATURA</th>
+                        <th>1</th>
+                        <th>2</th>
+                        <th>3</th>
+                        <th>4</th>
+                        <th>DEFINITIVA</th>
+                        <th>DESEMPEÑO</th>
+                        <th>LOGROS</th>
+                        <th>ESTADO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each subjects}}
+                    <tr>
+                        <td class="center">{{inc @index}}</td>
+                        <td class="bold">{{this.materia}}</td>
+                        {{#each this.porPeriodo}}
+                        <td class="center{{#if (eq this.desempeno 'Z')}} nota-baja{{/if}}">{{#if this.valoracion}}{{this.valoracion}}{{else}}&nbsp;{{/if}}</td>
+                        {{/each}}
+                        <td class="center bold{{#if (eq this.desempenoDefinitiva 'Z')}} nota-baja{{/if}}">{{#if this.definitiva}}{{this.definitiva}}{{else}}&nbsp;{{/if}}</td>
+                        <td class="center bold">{{this.desempenoDefinitiva}}</td>
+                        <td>{{this.logros}}</td>
+                        <td class="center">
+                            {{#if (eq this.estado 'Aprobado')}}<span class="badge aprobado">Aprobado</span>{{/if}}
+                            {{#if (eq this.estado 'Reprobado')}}<span class="badge reprobado">Reprobado</span>{{/if}}
+                            {{#if (eq this.estado 'Sin notas')}}<span class="badge">Sin notas</span>{{/if}}
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECCIÓN INFERIOR: ASISTENCIA, OBSERVACIONES Y ESCALA -->
+        <div class="bottom-grid">
+            <!-- ASISTENCIA -->
+            <div class="bottom-box">
+                <h4 class="box-title">ASISTENCIA</h4>
+                <table class="mini-table">
+                    <tr><td>Presente</td><td class="right bold">{{attendance.presente}}</td></tr>
+                    <tr><td>Ausente</td><td class="right bold">{{attendance.ausente}}</td></tr>
+                    <tr><td>Inasistencia justificada</td><td class="right bold">{{attendance.justificada}}</td></tr>
+                    <tr><td>Total de jornadas</td><td class="right bold">{{attendance.total}}</td></tr>
+                    <tr class="highlight-row">
+                        <td>Tasa de asistencia</td>
+                        <td class="right bold">{{attendance.tasa}} %</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- OBSERVACIONES -->
+            <div class="bottom-box">
+                <h4 class="box-title">OBSERVACIONES</h4>
+                <p class="observaciones-texto">
+                    {{observaciones}}
+                </p>
+            </div>
+
+            <!-- ESCALA INSTITUCIONAL -->
+            <div class="bottom-box">
+                <h4 class="box-title">ESCALA INSTITUCIONAL</h4>
+                <ul class="escala-lista">
+                    <li><strong>S</strong> — Superior</li>
+                    <li><strong>A</strong> — Alto</li>
+                    <li><strong>B</strong> — Básico</li>
+                    <li><strong>Z</strong> — Bajo</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- FIRMAS -->
+        <div class="firmas-container">
+            <div class="firma-box">
+                <div class="linea-firma"></div>
+                <p class="cargo">RECTOR(A)</p>
+            </div>
+            <div class="firma-box">
+                <div class="linea-firma"></div>
+                <p class="cargo">DIRECTOR(A) DE GRUPO</p>
+            </div>
+        </div>
+
+        <!-- PIE DE PÁGINA -->
+        <footer class="footer">
+            <span>{{institution.nombre}}</span>
+        </footer>
+    </div>
+
+</body>
+</html>

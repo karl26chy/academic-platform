@@ -44,7 +44,16 @@ export async function academicHistory(studentId, user, filtros = {}) {
     const periodo = fila.periodo || 'Sin periodo';
     let periodEntry = yearEntry.periods.find(p => p.period === periodo);
     if (!periodEntry) {
-      periodEntry = { period: periodo, grade: null, subjects: [] };
+      periodEntry = {
+        period: periodo,
+        // Datos del periodo académico para mostrar "Periodo N — nombre — año".
+        periodo_id: fila.periodo_id || null,
+        numero: fila.periodo_numero !== null && fila.periodo_numero !== undefined ? Number(fila.periodo_numero) : null,
+        nombre: fila.periodo_nombre || null,
+        anio: fila.periodo_anio !== null && fila.periodo_anio !== undefined ? Number(fila.periodo_anio) : null,
+        grade: null,
+        subjects: [],
+      };
       yearEntry.periods.push(periodEntry);
     }
 

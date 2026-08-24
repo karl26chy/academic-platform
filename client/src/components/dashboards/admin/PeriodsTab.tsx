@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Edit3, Loader2, Lock, Plus, ShieldAlert, Trash2, Unlock } from 'lucide-react';
+import { Edit3, Loader2, Lock, Plus, Trash2, Unlock } from 'lucide-react';
 import { Badge, Card, CardTitle, EmptyMessage, Modal, TableWrapper, TableHead, TableBody } from '../../ui';
 import { PeriodForm } from './PeriodForm';
 import { PeriodConfirmModal } from './PeriodConfirmModal';
 import { useAcademicPeriods, type PeriodFormData } from './useAcademicPeriods';
 import { useApp } from '../../../context/useApp';
+import { periodLabel } from '../../../lib/periods';
 import type { AcademicPeriod } from '../../../types';
 
 /** "2026-08-10" → "10/08/2026" (sin depender de zona horaria). */
@@ -22,7 +23,7 @@ type ConfirmAction =
 export const PeriodsTab: React.FC = () => {
   const { user } = useApp();
   const {
-    periods, loading, error, feedback,
+    periods, loading, error,
     create, update, openPeriod, closePeriod, remove, reload,
   } = useAcademicPeriods();
 
@@ -71,17 +72,6 @@ export const PeriodsTab: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {feedback && (
-        <div className={`p-4 rounded-xl border text-sm flex items-center gap-2 ${
-          feedback.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-            : 'bg-red-50 border-red-200 text-red-600'
-        }`}>
-          {feedback.type === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <ShieldAlert className="h-5 w-5" />}
-          {feedback.text}
-        </div>
-      )}
-
       {error && (
         <div className="p-4 rounded-xl border text-sm flex items-center justify-between gap-2 bg-red-50 border-red-200 text-red-600">
           <span>{error}</span>
@@ -140,7 +130,9 @@ export const PeriodsTab: React.FC = () => {
               <TableBody>
                 {periods.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="py-3 font-semibold text-gray-900">{p.nombre}</td>
+                    <td className="py-3 font-semibold text-gray-900">
+                      {periodLabel(p)}
+                    </td>
                     <td className="py-3 text-gray-500">{p.numero}</td>
                     <td className="py-3 text-gray-500">{p.anio}</td>
                     <td className="py-3 text-gray-500">{formatFecha(p.fecha_inicio)}</td>

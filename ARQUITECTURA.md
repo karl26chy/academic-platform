@@ -100,6 +100,13 @@ src/
 
 ---
 
+## Entorno local vs producción
+
+- **Desarrollo:** `docker-compose.local.yml` (`name: pruebas-app-local`) levanta PG en `55432:5432` + API `5000` + Vite `5173`. `DATABASE_URL` siempre local (`db:5432` interno). Ver `/.env.local` y `docker-compose.local.yml:39`.
+- **Guard anti-producción:** `api/src/config/index.js` y `api/src/db/pool.js` abortan si `DATABASE_URL` contiene `supabase.co`/`pooler.supabase.com` con `NODE_ENV != production`. Protege tanto `docker compose` como `node src/server.js` directo.
+- **Overlay remoto:** `docker-compose.supabase-remote.yml` requiere `--profile supabase-remote` + `NODE_ENV=production` para conectar a Supabase a propósito (debug). Sin profile no se activa.
+- **Producción:** `Dockerfile.production` + `render.yaml` (un solo Web Service, `DATABASE_URL` inyectado por dashboard).
+
 ## Pruebas
 
 `api/tests/` congela el comportamiento del API: 110 verificaciones sobre
@@ -112,7 +119,7 @@ cd api && npm test
 
 El runner arranca su propia instancia de la API, crea un mundo de pruebas con
 dos instituciones aisladas y lo borra al terminar. Necesita una base PostgreSQL
-accesible; se configura con `TEST_DATABASE_URL`.
+accesible; se configura con `TEST_DATABASE_URL` (default `postgres://platform:platform@localhost:55432/platform`, alinea con PG local).
 
 Los tests documentan el comportamiento **actual**, incluidos los defectos
 conocidos marcados como tales. Si se corrige uno, hay que invertir su test.

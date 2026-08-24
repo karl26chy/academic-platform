@@ -59,11 +59,14 @@ export const PeriodForm: React.FC<PeriodFormProps> = ({
         <input
           type="text" required value={nombre}
           onChange={e => setNombre(e.target.value)}
-          className={INPUT} placeholder="Ej: Periodo 1"
+          className={INPUT} placeholder="Ej: Primer periodo"
         />
       </Field>
+      <p className="-mt-2 text-[11px] text-gray-400">
+        Solo el nombre descriptivo. El número del periodo va en el campo «Número».
+      </p>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Número">
           <input
             type="number" min="1" required value={numero}
@@ -80,7 +83,7 @@ export const PeriodForm: React.FC<PeriodFormProps> = ({
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Fecha de inicio">
           <input
             type="date" required value={fechaInicio}

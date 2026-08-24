@@ -1,26 +1,36 @@
 import React, { useState } from 'react';
-import { CalendarDays, Eye, LayoutDashboard } from 'lucide-react';
+import { BookOpen, CalendarDays, Eye, GraduationCap, LayoutDashboard, Link2, Users } from 'lucide-react';
 import { Tabs, type TabItem } from '../../ui';
+import { useApp } from '../../../context/useApp';
 import { useAdminDashboard } from './useAdminDashboard';
 import { OverviewTab } from './OverviewTab';
 import { StudentsTab } from './StudentsTab';
 import { PeriodsTab } from './PeriodsTab';
+import { GradosTab } from './GradosTab';
+import { MateriasTab } from './MateriasTab';
+import { DocentesTab } from './DocentesTab';
+import { AsignacionesTab } from './AsignacionesTab';
 
-type AdminTab = 'overview' | 'students' | 'periods';
+type AdminTab = 'overview' | 'grados' | 'materias' | 'docentes' | 'asignaciones' | 'students' | 'periods';
 
 const TABS: TabItem<AdminTab>[] = [
   { id: 'overview', label: 'Resumen', icon: <LayoutDashboard className="h-4 w-4" /> },
   { id: 'students', label: 'Estudiantes', icon: <Eye className="h-4 w-4" /> },
+  { id: 'grados', label: 'Grados', icon: <GraduationCap className="h-4 w-4" /> },
+  { id: 'materias', label: 'Materias', icon: <BookOpen className="h-4 w-4" /> },
+  { id: 'docentes', label: 'Docentes', icon: <Users className="h-4 w-4" /> },
+  { id: 'asignaciones', label: 'Asignaciones', icon: <Link2 className="h-4 w-4" /> },
   { id: 'periods', label: 'Periodos Académicos', icon: <CalendarDays className="h-4 w-4" /> },
 ];
 
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const { refreshData } = useApp();
   const {
     currentInstitution, instGrades, studentUsers, teacherUsers, subjects,
     marks, attendance, studentGrades, getSubjectName, lowPerfSubjects,
-    overallSubjectData, attendancePieData, getStudentGradeLabel,
-    getStudentAverage, getStudentAttendanceRate, buildBoletinData,
+    overallSubjectData, getStudentGradeLabel,
+    getStudentAverage, getStudentAttendanceRate,
   } = useAdminDashboard();
 
   return (
@@ -32,7 +42,7 @@ export const AdminDashboard: React.FC = () => {
         </p>
       </div>
 
-      <Tabs items={TABS} active={activeTab} onChange={setActiveTab} />
+      <Tabs items={TABS} active={activeTab} onChange={setActiveTab} scrollable />
 
       {activeTab === 'overview' && (
         <OverviewTab
@@ -43,10 +53,14 @@ export const AdminDashboard: React.FC = () => {
             grades: instGrades.length,
           }}
           subjectData={overallSubjectData}
-          attendancePieData={attendancePieData}
           lowPerfSubjects={lowPerfSubjects}
         />
       )}
+
+      {activeTab === 'grados' && <GradosTab />}
+      {activeTab === 'materias' && <MateriasTab />}
+      {activeTab === 'docentes' && <DocentesTab />}
+      {activeTab === 'asignaciones' && <AsignacionesTab />}
 
       {activeTab === 'students' && (
         <StudentsTab
@@ -61,7 +75,7 @@ export const AdminDashboard: React.FC = () => {
           getStudentGradeLabel={getStudentGradeLabel}
           getStudentAverage={getStudentAverage}
           getStudentAttendanceRate={getStudentAttendanceRate}
-          buildBoletinData={buildBoletinData}
+          onChanged={refreshData}
         />
       )}
 

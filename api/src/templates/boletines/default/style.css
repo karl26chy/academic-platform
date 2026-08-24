@@ -1,0 +1,13 @@
+.boletin{font-family: 'DejaVu Sans', sans-serif; padding:24px; color:#1a1a1a; font-size:12px; line-height:1.4}
+.boletin header h1{font-size:18px; color:#1F3864; margin:0 0 4px 0; text-transform:uppercase}
+.boletin .sub{font-size:11px; color:#666; margin:0 0 16px 0}
+.estudiante h2{font-size:14px; margin:0 0 4px 0}
+.estudiante p{font-size:11px; color:#444; margin:0 0 12px 0}
+.materias h3{font-size:13px; color:#1F3864; border-bottom:2px solid #C9A227; padding-bottom:4px; margin:16px 0 8px 0}
+.materias table{width:100%; border-collapse:collapse; margin-top:8px}
+.materias th{background:#1F3864; color:#fff; padding:6px 8px; text-align:left; font-size:10px; text-transform:uppercase}
+.materias td{padding:6px 8px; border-bottom:1px solid #e5e5e5}
+.materias tr:nth-child(even) td{background:#f8f8f8}
+.resumen{margin-top:16px; padding:12px; background:#f5f5f5; border-radius:6px}
+.resumen p{margin:4px 0}
+footer{margin-top:20px; text-align:center; font-size:10px; color:#888; border-top:1px solid #ddd; padding-top:8px}

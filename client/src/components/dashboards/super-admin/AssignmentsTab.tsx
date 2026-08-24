@@ -150,7 +150,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
             <Field label="Materia">
               <select required value={subjectId} onChange={e => setSubjectId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
-                {subjects.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {subjects
+                  .filter(s => s.institucion_id === assignInstId)
+                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </Field>
 
@@ -173,8 +175,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
           {filteredAssignments.map(a => (
             <div key={a.id} className="p-3 bg-white rounded-xl border border-gray-200 text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-gray-900">{getUserLabel(a.profesor_id)}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-gray-900 min-w-0 truncate">{getUserLabel(a.profesor_id)}</span>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => setEditingAssignment(a)} title="Editar asignación"
@@ -221,7 +223,12 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
               <select required value={studentId} onChange={e => setStudentId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
                 {users
-                  .filter(u => u.rol === 'student' && u.institucion_id === studInstId)
+                  .filter(
+                    u =>
+                      u.rol === 'student' &&
+                      u.institucion_id === studInstId &&
+                      !studentGrades.some(sg => sg.estudiante_id === u.id)
+                  )
                   .map(s => <option key={s.id} value={s.id}>{s.nombre} {s.apellido}</option>)}
               </select>
             </Field>
@@ -249,9 +256,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                 users.some(u => u.rol === 'student' && u.institucion_id === studInstId && u.id === sg.estudiante_id)
               )
               .map(sg => (
-                <div key={sg.id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-gray-200 text-xs">
-                  <span className="font-semibold text-gray-900">{getUserLabel(sg.estudiante_id)}</span>
-                  <div className="flex items-center gap-1.5">
+                <div key={sg.id} className="flex flex-wrap justify-between items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 text-xs">
+                  <span className="font-semibold text-gray-900 min-w-0 truncate">{getUserLabel(sg.estudiante_id)}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className="px-2 py-0.5 rounded bg-q10-50 text-q10-600 font-medium">
                       {getGradeLabel(sg.grado_id)}
                     </span>

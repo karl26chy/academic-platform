@@ -7,7 +7,7 @@ interface CardProps {
 
 /** Panel blanco con borde suave: contenedor base de toda la interfaz. */
 export const Card: React.FC<CardProps> = ({ children, className = '' }) => (
-  <div className={`bg-white shadow-sm border border-gray-200 p-6 rounded-2xl ${className}`}>
+  <div className={`bg-white shadow-sm border border-gray-200 p-4 sm:p-6 rounded-2xl ${className}`}>
     {children}
   </div>
 );

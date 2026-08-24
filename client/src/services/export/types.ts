@@ -27,7 +27,7 @@ export interface BoletinData {
   notaMinima: number;
   asistenciaTasa: number;
   ausencias: number;
-  tardanzas: number;
+  justificadas: number;
   fileName: string;
 }
 

@@ -18,6 +18,7 @@ export const StudentDashboard: React.FC = () => {
     user, currentInstitution, myGrade, myGradeAssignments, myTeachers,
     getSubjectName, getTeacherName, myMarks, chartData,
     myAttendance, attendanceCounts, presenceRate, myCitations, pendingCitations,
+    periods, periodLabelOf,
   } = useStudentDashboard();
 
   const [activeTab, setActiveTab] = useState<StudentTab>('grades');
@@ -55,16 +56,16 @@ export const StudentDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mi Portal Estudiantil</h2>
+          <h2 className="text-2xl font-bold text-gray-900"></h2>
           <p className="text-gray-500 text-sm">
             {myGrade ? `Grado: ${myGrade.nombre} "${myGrade.tipo_grado}"` : 'No asignado a un grado aún.'}
           </p>
         </div>
 
         {pendingCitations.length > 0 && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center gap-3 animate-pulse">
+          <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 animate-pulse">
             <ShieldAlert className="h-6 w-6 text-red-600 shrink-0" />
-            <div>
+            <div className="min-w-0 flex-1">
               <span className="font-bold text-gray-900 text-xs block">CITACIÓN PENDIENTE</span>
               <span className="text-gray-600 text-[11px] block">
                 Tienes {pendingCitations.length} citación(es) oficial(es) por atender.
@@ -72,7 +73,7 @@ export const StudentDashboard: React.FC = () => {
             </div>
             <button
               onClick={() => setActiveTab('citations')}
-              className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-semibold transition-colors"
+              className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-semibold transition-colors shrink-0"
             >
               Ver
             </button>
@@ -94,11 +95,12 @@ export const StudentDashboard: React.FC = () => {
           marks={myMarks}
           institution={currentInstitution}
           getSubjectName={getSubjectName}
+          periodLabelOf={periodLabelOf}
         />
       )}
 
       {activeTab === 'history' && user && (
-        <AcademicHistoryView studentId={user.id} student={user} />
+        <AcademicHistoryView studentId={user.id} student={user} hideExport />
       )}
 
       {activeTab === 'attendance' && (
@@ -106,6 +108,7 @@ export const StudentDashboard: React.FC = () => {
           records={myAttendance}
           counts={attendanceCounts}
           presenceRate={presenceRate}
+          periods={periods}
           getSubjectName={getSubjectName}
           getTeacherName={getTeacherName}
         />

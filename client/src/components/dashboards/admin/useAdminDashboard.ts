@@ -23,7 +23,6 @@ export function useAdminDashboard() {
 
   const studentIds = studentUsers.map(s => s.id);
   const instMarks = marks.filter(m => studentIds.includes(m.estudiante_id));
-  const instAttendance = attendance.filter(a => studentIds.includes(a.estudiante_id));
 
   /** Las cinco materias con menor promedio de la institución. */
   const lowPerfSubjects = useMemo(() => {
@@ -50,17 +49,6 @@ export function useAdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [marks, studentUsers, getSubjectName]
   );
-
-  /** El gráfico de tarta necesita un valor mínimo para dibujarse vacío. */
-  const attendancePieData = useMemo(() => {
-    const { presente, ausente, tardanza } = countByStatus(instAttendance);
-    return [
-      { name: 'Presente', value: presente || 1 },
-      { name: 'Ausente', value: ausente || 1 },
-      { name: 'Tardanza', value: tardanza || 1 },
-    ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attendance, studentUsers]);
 
   const getStudentGradeLabel = (studId: string) => {
     const enrollment = studentGrades.find(sg => sg.estudiante_id === studId);
@@ -115,7 +103,7 @@ export function useAdminDashboard() {
       notaMinima: currentInstitution?.nota_minima_aprobacion ?? 0,
       asistenciaTasa: getStudentAttendanceRate(student.id),
       ausencias: counts.ausente,
-      tardanzas: counts.tardanza,
+      justificadas: counts.justificada,
       fileName: `boletin_${fileSlug(student)}`,
     };
   };
@@ -132,7 +120,6 @@ export function useAdminDashboard() {
     getSubjectName,
     lowPerfSubjects,
     overallSubjectData,
-    attendancePieData,
     getStudentGradeLabel,
     getStudentAverage,
     getStudentAttendanceRate,

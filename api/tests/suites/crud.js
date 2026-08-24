@@ -1,4 +1,4 @@
-import { get, post, put, patch, del, login } from '../helpers/http.js';
+import { get, post, put, patch, del, loginStudent } from '../helpers/http.js';
 import { track } from '../helpers/fixtures.js';
 import { suite, test, equal, ok, notOk } from '../helpers/runner.js';
 
@@ -91,7 +91,7 @@ export default async function crudSuite(world) {
     const res = await post('/users', {
       email: `pwd${world.id}@test.local`, password: 'secreto123', rol: 'student',
       nombre: 'P', apellido: 'W', institucion_id: world.inst.A.id, activo: true,
-      tipo_documento: 'TI',
+      tipo_documento: 'TI', identificacion: `IDPWD${world.id}`,
     }, world.tokens.adminA);
     equal(res.status, 201, 'status');
     notOk('password' in res.data, 'la respuesta no trae password');
@@ -103,10 +103,11 @@ export default async function crudSuite(world) {
     const creado = (await post('/users', {
       email, password: 'clave-original', rol: 'student', nombre: 'H', apellido: 'A',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'CC',
+      identificacion: `IDHASH${world.id}`,
     }, world.tokens.adminA)).data;
     track(world, 'users', creado.id);
 
-    const sesion = await login(email, 'clave-original');
+    const sesion = await loginStudent(`IDHASH${world.id}`, 'clave-original');
     equal(sesion.user.id, creado.id, 'inicia sesión con la contraseña original');
   });
 
@@ -115,6 +116,7 @@ export default async function crudSuite(world) {
     const creado = (await post('/users', {
       email, password: 'primera', rol: 'student', nombre: 'R', apellido: 'H',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'TI',
+      identificacion: `IDREH${world.id}`,
     }, world.tokens.adminA)).data;
     track(world, 'users', creado.id);
 
@@ -122,7 +124,7 @@ export default async function crudSuite(world) {
     equal(res.status, 200, 'status');
     notOk('password' in res.data, 'la respuesta no trae password');
 
-    const sesion = await login(email, 'segunda');
+    const sesion = await loginStudent(`IDREH${world.id}`, 'segunda');
     equal(sesion.user.id, creado.id, 'inicia sesión con la contraseña nueva');
   });
 
@@ -131,11 +133,12 @@ export default async function crudSuite(world) {
     const creado = (await post('/users', {
       email, password: 'inicial', rol: 'student', nombre: 'V', apellido: 'A',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'PPT',
+      identificacion: `IDVAC${world.id}`,
     }, world.tokens.adminA)).data;
     track(world, 'users', creado.id);
 
     await put(`/users/${creado.id}`, { password: '', nombre: 'Vacio' }, world.tokens.adminA);
-    const sesion = await login(email, 'inicial');
+    const sesion = await loginStudent(`IDVAC${world.id}`, 'inicial');
     equal(sesion.user.nombre, 'Vacio', 'el nombre sí cambió y la contraseña sigue siendo válida');
   });
 

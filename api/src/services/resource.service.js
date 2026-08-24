@@ -55,7 +55,8 @@ export async function create(resource, body, user) {
     if (data.activo === true) return repo.insertOpenPeriod(data);
   }
 
-  return repo.insert(resource, data);
+  const row = await repo.insert(resource, data);
+  return row;
 }
 
 export async function replace(resource, id, body, user) {
@@ -83,6 +84,7 @@ export async function replace(resource, id, body, user) {
 const DEP_LABELS = {
   usuarios: 'usuarios',
   grados: 'grados',
+  materias: 'materias',
   asignaciones: 'asignaciones',
   evaluaciones: 'evaluaciones',
   registros_academicos: 'registros académicos',
@@ -177,6 +179,7 @@ export async function destroy(resource, id, user) {
     const partes = [];
     if (deps.evaluaciones > 0) partes.push(`${deps.evaluaciones} evaluaciones`);
     if (deps.notas > 0) partes.push(`${deps.notas} notas`);
+    if (deps.asistencias > 0) partes.push(`${deps.asistencias} asistencias`);
     if (partes.length > 0) {
       throw new HttpError(409, `No se puede eliminar este periodo porque tiene datos asociados: ${partes.join(', ')}.`);
     }
@@ -199,6 +202,15 @@ export async function destroy(resource, id, user) {
         if (periodo && periodo.activo === false) {
           throw new HttpError(409, 'El periodo está cerrado; no se puede eliminar la nota.');
         }
+      }
+    }
+  }
+
+  if (resource === 'attendance') {
+    if (existing.periodo_id) {
+      const periodo = await repo.periodById(existing.periodo_id);
+      if (periodo && periodo.activo === false) {
+        throw new HttpError(409, 'El periodo está cerrado; no se puede eliminar la asistencia.');
       }
     }
   }

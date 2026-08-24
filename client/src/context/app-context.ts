@@ -38,7 +38,7 @@ export interface AppContextValue {
   activeSubdomain: string | null;
   setSimulatedSubdomain: (subdomain: string | null) => void;
 
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshData: () => Promise<void>;
 

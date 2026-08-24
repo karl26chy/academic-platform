@@ -53,17 +53,17 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                     : 'bg-gray-50 border-gray-200 text-gray-600'
               }`}
             >
-              <div className="flex justify-between items-start font-semibold">
-                <span className="flex items-center gap-1.5">
-                  {isUnread && <span className="w-2 h-2 bg-q10-600 rounded-full" />}
+              <div className="flex justify-between items-start gap-2 font-semibold">
+                <span className="flex items-center gap-1.5 min-w-0 truncate">
+                  {isUnread && <span className="w-2 h-2 bg-q10-600 rounded-full shrink-0" />}
                   {isSender ? `Tú → ${nameOf(msg.destinatario_id)}` : nameOf(msg.remitente_id)}
                 </span>
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-gray-400 shrink-0">
                   {new Date(msg.created_at).toLocaleDateString()}
                 </span>
               </div>
-              <div className="font-bold text-gray-900">{msg.asunto}</div>
-              <p className="text-gray-500 mt-1 truncate">{msg.cuerpo}</p>
+              <div className="font-bold text-gray-900 break-words">{msg.asunto}</div>
+              <p className="text-gray-500 mt-1 line-clamp-2">{msg.cuerpo}</p>
               <div className="flex justify-end pt-1">
                 <button
                   onClick={e => {

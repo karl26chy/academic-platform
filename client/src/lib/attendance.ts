@@ -3,14 +3,14 @@ import type { Attendance } from '../types';
 /**
  * Métricas de asistencia.
  *
- * OJO: la plataforma usa DOS tasas distintas y no son intercambiables.
- * Se conservan tal cual estaban para no alterar las cifras que ya ve cada rol.
+ * Estados: presente, ausente, justificada (Inasistencia justificada; la
+ * antigua "tardanza" ya no existe).
  */
 
 export interface AttendanceCounts {
   presente: number;
   ausente: number;
-  tardanza: number;
+  justificada: number;
   total: number;
 }
 
@@ -18,7 +18,7 @@ export function countByStatus(records: Attendance[]): AttendanceCounts {
   return {
     presente: records.filter(a => a.estado === 'presente').length,
     ausente: records.filter(a => a.estado === 'ausente').length,
-    tardanza: records.filter(a => a.estado === 'tardanza').length,
+    justificada: records.filter(a => a.estado === 'justificada').length,
     total: records.length,
   };
 }
@@ -34,11 +34,11 @@ export function attendanceRateStrict(records: Attendance[]): number {
 }
 
 /**
- * Tasa usada en el portal del estudiante: cuenta también las tardanzas como
- * presencia y devuelve 100 cuando todavía no hay registros.
+ * Tasa usada en el portal del estudiante: cuenta también las inasistencias
+ * justificadas como asistencia y devuelve 100 cuando todavía no hay registros.
  */
-export function attendanceRateWithTardiness(records: Attendance[]): number {
+export function attendanceRateWithJustified(records: Attendance[]): number {
   if (records.length === 0) return 100;
-  const { presente, tardanza } = countByStatus(records);
-  return Math.round(((presente + tardanza) / records.length) * 100);
+  const { presente, justificada } = countByStatus(records);
+  return Math.round(((presente + justificada) / records.length) * 100);
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { api } from '../services/api';
 import { useApp } from '../context/useApp';
+import { toast } from '../components/ui';
 import type { Message } from '../types';
 
 interface MessagingOptions {
@@ -85,9 +86,9 @@ export function useMessaging({
       });
       resetForm();
       await refreshData();
-      alert(successMessage);
+      toast.success(successMessage);
     } catch {
-      alert('Error al enviar mensaje');
+      toast.error('Error al enviar mensaje');
     }
   };
 

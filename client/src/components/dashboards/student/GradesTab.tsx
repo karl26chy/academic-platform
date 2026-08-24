@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardTitle, EmptyMessage, ExportButtons, TableWrapper, TableHead, TableBody } from '../../ui';
+import { Card, CardTitle, EmptyMessage, TableWrapper, TableHead, TableBody } from '../../ui';
 import { SubjectPerformanceChart, type SubjectChartDatum } from '../../charts/SubjectPerformanceChart';
 import { maxScoreFor } from '../../../lib/grades';
 import type { Institution, Mark } from '../../../types';
@@ -9,6 +9,8 @@ interface GradesTabProps {
   marks: Mark[];
   institution: Institution | null;
   getSubjectName: (subjectId: string) => string;
+  /** Resuelve "Periodo N — nombre — año" desde periodo_id (fallback al texto). */
+  periodLabelOf?: (periodoId?: string | null, fallback?: string) => string;
 }
 
 /** "2026-08-10" → "10/08/2026" (sin depender de zona horaria). */
@@ -24,13 +26,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   marks,
   institution,
   getSubjectName,
+  periodLabelOf,
 }) => {
-  const exportTable = () => ({
-    title: 'Calificaciones',
-    headers: ['Materia', 'Evaluación', 'Periodo', 'Fecha', 'Nota'],
-    rows: marks.map(m => [getSubjectName(m.materia_id), m.tipo_evaluacion, m.periodo, formatFecha(m.fecha_evaluacion), m.nota]),
-    fileName: 'calificaciones',
-  });
+  const periodOf = (m: Mark): string =>
+    periodLabelOf ? periodLabelOf(m.periodo_id, m.periodo) : (m.periodo || '');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -44,7 +43,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <SubjectPerformanceChart
             data={chartData}
             dataKey="Nota Promedio"
-            maxScore={maxScoreFor(institution?.tipo)}
+            maxScore={maxScoreFor(institution)}
             notaMinima={institution?.nota_minima_aprobacion}
             referenceLabel={`Mínima (${institution?.nota_minima_aprobacion.toFixed(1)})`}
             referenceLabelPosition="insideBottomRight"
@@ -59,7 +58,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <Card>
         <div className="flex items-center justify-between mb-4">
           <CardTitle className="">Boleta de Calificaciones Detallada</CardTitle>
-          <ExportButtons build={exportTable} />
         </div>
 
         {marks.length === 0 ? (
@@ -82,7 +80,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="py-3 font-semibold text-gray-900">{getSubjectName(m.materia_id)}</td>
                     <td className="py-3 text-gray-600">{m.tipo_evaluacion}</td>
-                    <td className="py-3 text-gray-500">{m.periodo}</td>
+                    <td className="py-3 text-gray-500">{periodOf(m)}</td>
                     <td className="py-3 text-gray-500">{formatFecha(m.fecha_evaluacion)}</td>
                     <td className="py-3 text-right">
                       <span

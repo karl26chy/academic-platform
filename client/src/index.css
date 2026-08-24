@@ -23,6 +23,38 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Toasts SweetAlert2: aspecto acorde a la plataforma. */
+.swal2-popup.swal2-toast {
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(16 24 40 / 0.1), 0 4px 6px -4px rgb(16 24 40 / 0.1);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.swal2-container {
+  z-index: 1100;
+}
+
+.swal2-toast .swal2-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  padding: 0.25em 0.75em 0.25em 0;
+}
+
+.swal2-toast .swal2-close {
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .swal2-container.swal2-top-end {
+    justify-content: flex-end;
+    padding: 0.5rem;
+  }
+  .swal2-popup.swal2-toast {
+    max-width: calc(100vw - 1rem);
+  }
+}
+
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -35,4 +67,19 @@ body {
   min-height: 100vh;
   background-color: #f0f4f8;
   color: #1e293b;
+}
+
+/* Ocultar los spinners de los inputs numéricos sin cambiar su comportamiento:
+   se mantiene type="number" (validación, teclado móvil y parsing intactos).
+   WebKit / Chromium / Edge / Safari. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox. */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

@@ -75,12 +75,12 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       />
 
       <Card className="lg:col-span-2">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <CardTitle className="">Usuarios por Institución</CardTitle>
           <select
             value={selectedInstId}
             onChange={e => setSelectedInstId(e.target.value)}
-            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none"
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none w-full sm:w-auto min-w-0"
           >
             <option value="">-- Seleccionar Institución --</option>
             {institutions.map(inst => (

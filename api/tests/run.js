@@ -14,6 +14,12 @@ import validationSuite from './suites/validation.js';
 import crudSuite from './suites/crud.js';
 import errorsSuite from './suites/errors.js';
 import periodsSuite from './suites/periods.js';
+import gradingSuite from './suites/grading.js';
+import attendanceSuite from './suites/attendance.js';
+import subjectsSuite from './suites/subjects.js';
+import studentsSuite from './suites/students.js';
+import reportsSuite from './suites/reports.js';
+import evaluationsSuite from './suites/evaluations.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(here, '..');
@@ -109,6 +115,12 @@ async function main() {
     await crudSuite(world);
     await errorsSuite(world);
     await periodsSuite(world);
+    await gradingSuite(world);
+    await attendanceSuite(world);
+    await subjectsSuite(world);
+    await studentsSuite(world);
+    await reportsSuite(world);
+    await evaluationsSuite(world);
 
     exitCode = report();
   } catch (err) {

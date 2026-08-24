@@ -62,7 +62,7 @@ export const EditStudentGradeModal: React.FC<EditStudentGradeModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-t-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-t-2xl p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold">Editar Matrícula</h3>
             <button onClick={onClose} className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10">
@@ -71,7 +71,7 @@ export const EditStudentGradeModal: React.FC<EditStudentGradeModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-4">
+        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4">
           <div>
             <label className={LABEL}>Institución</label>
             <input value={institution?.nombre || ''} disabled className={FIELD} />

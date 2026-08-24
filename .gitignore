@@ -11,10 +11,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment
+# Environment — .env y .env.* nunca se commitean (.env.local, api/.env, etc.)
 .env
 .env.*
 !.env.example
+!.env.local.example
 
 # Editor
 .vscode/
@@ -34,3 +35,7 @@ Desktop.ini
 
 # API
 api/node_modules/
+
+# Skills de agentes (opencode / skills CLI)
+.agents/
+skills-lock.json

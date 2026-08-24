@@ -3,7 +3,7 @@
  * Es la única pieza que conoce `fetch`; los módulos de API construyen sobre ella.
  */
 
-const API_BASE =
+export const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') || '/api';
 
 const TOKEN_KEY = 'edu_platform_token';

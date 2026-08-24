@@ -143,11 +143,13 @@ export default async function scopeSuite(world) {
     ok(users.includes(world.users.studentA.id) && users.includes(world.users.studentB.id), 've ambos');
   });
 
-  await test('las materias son un catálogo global compartido (comportamiento actual)', async () => {
+  await test('las materias están aisladas por institución', async () => {
     const a = idsOf((await get('/subjects', world.tokens.adminA)).data);
     const b = idsOf((await get('/subjects', world.tokens.adminB)).data);
-    ok(a.includes(world.subjects.X.id), 'A ve la materia');
-    ok(b.includes(world.subjects.X.id), 'B ve la MISMA materia (sin aislamiento por institución)');
+    ok(a.includes(world.subjects.X.id), 'A ve la materia de su institución');
+    ok(b.includes(world.subjects.Z.id), 'B ve la materia de su institución');
+    notOk(a.includes(world.subjects.Z.id), 'A NO ve la materia de B');
+    notOk(b.includes(world.subjects.X.id), 'B NO ve la materia de A');
   });
 
   await test('pedir por id un recurso fuera del alcance devuelve 404', async () => {

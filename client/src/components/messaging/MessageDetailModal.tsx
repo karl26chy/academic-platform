@@ -20,9 +20,9 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
   onReply,
 }) => (
   <Modal onClose={onClose}>
-    <div className="flex justify-between items-start">
-      <div>
-        <h3 className="text-lg font-bold text-gray-900">{message.asunto}</h3>
+    <div className="flex flex-wrap justify-between items-start gap-2">
+      <div className="min-w-0">
+        <h3 className="text-lg font-bold text-gray-900 break-words">{message.asunto}</h3>
         <p className="text-xs text-gray-500 mt-1">
           {message.remitente_id === currentUserId
             ? `Para: ${nameOf(message.destinatario_id)}`

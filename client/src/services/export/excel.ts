@@ -28,7 +28,7 @@ export function exportBoletinToExcel(data: BoletinData) {
     ['Asistencia'],
     ['Tasa de Asistencia (%)', data.asistenciaTasa],
     ['Ausencias', data.ausencias],
-    ['Tardanzas', data.tardanzas],
+    ['Inasist. Justificadas', data.justificadas],
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 12 }, { wch: 22 }];

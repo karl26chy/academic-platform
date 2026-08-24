@@ -25,17 +25,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0 z-40 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-q10-50 border border-q10-200 rounded-xl text-q10-600">
+      <header className="bg-white border-b border-gray-200 min-h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-q10-50 border border-q10-200 rounded-xl text-q10-600 shrink-0">
             <Building2 className="h-5 w-5" />
           </div>
-          <div>
-            <h1 className="text-md font-bold text-gray-900 leading-tight">
+          <div className="min-w-0">
+            <h1 className="text-md font-bold text-gray-900 leading-tight truncate">
               {currentInstitution ? currentInstitution.nombre : 'Portal General'}
             </h1>
             {activeSubdomain && (
-              <span className="text-[11px] font-medium text-gray-500">
+              <span className="text-[11px] font-medium text-gray-500 truncate block">
                 {activeSubdomain}.plataforma.com
               </span>
             )}
@@ -43,7 +43,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
 
         {user && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => setNavigateToTab('messages')}
               className="relative p-2 bg-gray-100 hover:bg-q10-50 border border-gray-200 hover:border-q10-200 text-gray-500 hover:text-q10-600 rounded-xl transition-all"

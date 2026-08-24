@@ -44,13 +44,21 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nombre || !form.apellido || !form.email) return;
+    if (!form.nombre || !form.apellido) return;
+    if (esEstudiante && !form.tipo_documento) {
+      showMsg('error', 'Selecciona el tipo de documento.');
+      return;
+    }
+    if (esEstudiante && !(form.identificacion || '').trim()) {
+      showMsg('error', 'El número de identificación es obligatorio para estudiantes.');
+      return;
+    }
 
     try {
       const data: EditForm = {
         nombre: form.nombre,
         apellido: form.apellido,
-        email: form.email,
+        email: form.email || undefined,
         rol: form.rol as Role,
       };
       if (form.password) data.password = form.password;
@@ -90,7 +98,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-t-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-t-2xl p-4 sm:p-6 text-white">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold">Editar Usuario</h3>
             <button onClick={onClose} className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10">
@@ -99,8 +107,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Nombre</label>
               <input type="text" required value={form.nombre || ''} onChange={e => update({ nombre: e.target.value })} className={FIELD_FOCUS} />
@@ -112,8 +120,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
 
           <div>
-            <label className={LABEL}>Email</label>
-            <input type="email" required value={form.email || ''} onChange={e => update({ email: e.target.value })} className={FIELD_FOCUS} />
+            <label className={LABEL}>Email (opcional)</label>
+            <input type="email" value={form.email || ''} onChange={e => update({ email: e.target.value })} className={FIELD_FOCUS} />
           </div>
 
           <div>
@@ -132,7 +140,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
 
           {esEstudiante && (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={LABEL}>Tipo de documento</label>
                   <select
@@ -148,11 +156,11 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
                 <div>
                   <label className={LABEL}>Número de documento</label>
-                  <input type="text" value={form.identificacion || ''} onChange={e => update({ identificacion: e.target.value })} className={FIELD} />
+                  <input type="text" required value={form.identificacion || ''} onChange={e => update({ identificacion: e.target.value })} className={FIELD} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={LABEL}>Género</label>
                   <select value={form.genero || ''} onChange={e => update({ genero: e.target.value })} className={FIELD}>
@@ -164,7 +172,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={LABEL}>Fecha Nac.</label>
                   <input type="date" value={form.fecha_nacimiento || ''} onChange={e => update({ fecha_nacimiento: e.target.value })} className={FIELD} />
@@ -175,7 +183,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={LABEL}>Tipo Sangre</label>
                   <select value={form.tipo_sangre || ''} onChange={e => update({ tipo_sangre: e.target.value })} className={FIELD}>

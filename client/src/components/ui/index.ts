@@ -1,4 +1,5 @@
 export { Card, CardTitle, EmptyMessage } from './Card';
+export { toast } from '../../lib/toast';
 export { StatCard } from './StatCard';
 export { Tabs } from './Tabs';
 export type { TabItem } from './Tabs';

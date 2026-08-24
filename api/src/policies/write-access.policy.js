@@ -60,9 +60,26 @@ const writeAccessByResource = {
   },
 
   grades: soloAdminDeLaInstitucion,
-  subjects: soloAdminDeLaInstitucion,
+  subjects: (ctx) => {
+    if (ctx.rol !== 'admin') denegar('Solo un administrador puede gestionar materias de su institución.');
+    // Nunca confiar en un institucion_id enviado por el frontend: la materia
+    // queda en la institución del usuario (JWT).
+    if (ctx.data.institucion_id && ctx.data.institucion_id !== ctx.instId) denegar();
+    if (ctx.existingRow && ctx.existingRow.institucion_id !== ctx.instId) denegar();
+    ctx.data.institucion_id = ctx.instId;
+  },
   assignments: soloAdminDeLaInstitucion,
-  student_grades: soloAdminDeLaInstitucion,
+  student_grades: async (ctx) => {
+    if (ctx.rol !== 'admin') denegar('Solo un administrador gestiona las matrículas.');
+    const studentId = campo(ctx, 'estudiante_id');
+    const gradeId = campo(ctx, 'grado_id');
+    if (await institutionOfUser(studentId) !== ctx.instId) {
+      denegar('Solo puedes matricular estudiantes de tu institución.');
+    }
+    if (await institutionOfGrade(gradeId) !== ctx.instId) {
+      denegar('El grado debe pertenecer a tu institución.');
+    }
+  },
   academic_periods: soloAdminDeLaInstitucion,
 
   marks: async (ctx) => {

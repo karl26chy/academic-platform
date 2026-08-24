@@ -1,7 +1,7 @@
 import { get, post, put, del } from '../helpers/http.js';
 import { track } from '../helpers/fixtures.js';
 import { query as dbQuery } from '../helpers/db.js';
-import { suite, test, equal, ok, expectError } from '../helpers/runner.js';
+import { suite, test, equal, ok, notOk, expectError } from '../helpers/runner.js';
 
 /**
  * Sistema de periodos académicos:
@@ -21,11 +21,15 @@ export default async function periodsSuite(world) {
   const adminB = world.tokens.adminB;
   const teacherA = world.tokens.teacherA;
 
+  // Números únicos para los períodos creados por la suite: la regla de
+  // duplicados (institución + año + número) impide reutilizar combinaciones.
+  let seq = 100;
+
   const mkPeriod = async (institucion_id, token, over = {}) => {
     const res = await post('/academic_periods', {
       institucion_id,
       nombre: 'Periodo 1',
-      numero: 1,
+      numero: over.numero ?? seq++,
       anio: 2026,
       fecha_inicio: '2026-01-01',
       fecha_fin: '2026-12-31',
@@ -85,12 +89,12 @@ export default async function periodsSuite(world) {
   await test('crear evaluación sin periodo abierto devuelve 409', async () => {
     // Cierra temporalmente el único periodo abierto de instB.
     await put(`/academic_periods/${world.periods.B.id}`, {
-      institucion_id: instB.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instB.id, nombre: 'Periodo 1', numero: world.periods.B.numero, anio: 2026, activo: false,
     }, adminB);
 
     expectError(
       await post('/evaluations', {
-        institucion_id: instB.id, materia_id: world.subjects.X.id,
+        institucion_id: instB.id, materia_id: world.subjects.Z.id,
         grado_id: world.grades.B.id, nombre: `Eval ${world.id}`,
         fecha_evaluacion: '2026-05-01', porcentaje: 10, creado_por: world.users.adminB.id,
       }, adminB),
@@ -100,7 +104,7 @@ export default async function periodsSuite(world) {
 
     // Restaura el periodo abierto de instB.
     await put(`/academic_periods/${world.periods.B.id}`, {
-      institucion_id: instB.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: true,
+      institucion_id: instB.id, nombre: 'Periodo 1', numero: world.periods.B.numero, anio: 2026, activo: true,
     }, adminB);
   });
 
@@ -117,7 +121,7 @@ export default async function periodsSuite(world) {
     try {
       expectError(
         await post('/evaluations', {
-          institucion_id: instB.id, materia_id: world.subjects.X.id,
+          institucion_id: instB.id, materia_id: world.subjects.Z.id,
           grado_id: world.grades.B.id, nombre: `Eval ${world.id}`,
           fecha_evaluacion: '2026-05-01', porcentaje: 10, creado_por: world.users.adminB.id,
         }, adminB),
@@ -137,7 +141,7 @@ export default async function periodsSuite(world) {
     track(world, 'evaluations', ev.id);
 
     await put(`/academic_periods/${per.id}`, {
-      institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: false,
     }, adminA);
 
     expectError(
@@ -155,7 +159,7 @@ export default async function periodsSuite(world) {
     track(world, 'evaluations', ev.id);
 
     await put(`/academic_periods/${per.id}`, {
-      institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: false,
     }, adminA);
 
     expectError(
@@ -175,7 +179,7 @@ export default async function periodsSuite(world) {
     track(world, 'evaluations', ev.id);
 
     await put(`/academic_periods/${per.id}`, {
-      institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: false,
     }, adminA);
 
     expectError(
@@ -196,7 +200,7 @@ export default async function periodsSuite(world) {
     track(world, 'marks', mark.id);
 
     await put(`/academic_periods/${per.id}`, {
-      institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: false,
     }, adminA);
 
     expectError(
@@ -217,7 +221,7 @@ export default async function periodsSuite(world) {
     track(world, 'marks', mark.id);
 
     await put(`/academic_periods/${per.id}`, {
-      institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: false,
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: false,
     }, adminA);
 
     expectError(
@@ -257,10 +261,36 @@ export default async function periodsSuite(world) {
 
     expectError(
       await put(`/academic_periods/${per.id}`, {
-        institucion_id: instA.id, nombre: 'Periodo 1', numero: 1, anio: 2026, activo: true,
+        institucion_id: instA.id, nombre: 'Periodo 1', numero: per.numero, anio: 2026, activo: true,
       }, adminB),
       403
     );
+  });
+
+  // ---- Nombre y número independientes -------------------------------------
+
+  await test('el número del periodo se mantiene separado del nombre', async () => {
+    const res = await post('/academic_periods', {
+      institucion_id: instA.id, nombre: 'Primer periodo', numero: 52, anio: 2026,
+      fecha_inicio: '2026-01-01', fecha_fin: '2026-12-31', activo: false,
+    }, adminA);
+    equal(res.status, 201, 'status');
+    equal(res.data.nombre, 'Primer periodo', 'el nombre es solo descriptivo');
+    equal(res.data.numero, 52, 'el número vive en su propio campo');
+    notOk(String(res.data.nombre).includes('2'), 'el número NO se duplica en el nombre');
+    track(world, 'academic_periods', res.data.id);
+  });
+
+  await test('el número se devuelve correctamente desde la API', async () => {
+    const creado = (await post('/academic_periods', {
+      institucion_id: instA.id, nombre: 'Primer periodo', numero: 51, anio: 2026,
+      fecha_inicio: '2026-01-01', fecha_fin: '2026-12-31', activo: false,
+    }, adminA)).data;
+    track(world, 'academic_periods', creado.id);
+
+    const porId = (await get(`/academic_periods/${creado.id}`, adminA)).data;
+    equal(porId.numero, 51, 'GET por id trae el número');
+    equal(porId.nombre, 'Primer periodo', 'GET por id trae el nombre descriptivo');
   });
 
   // ---- Borrado de periodos -------------------------------------------------
@@ -284,5 +314,97 @@ export default async function periodsSuite(world) {
       await del(`/academic_periods/${per.id}`, adminA),
       409
     );
+  });
+
+  // ---- Integridad: duplicados, años y protección del historial -------------
+
+  await test('no permitir dos períodos con la misma institución + año + número', async () => {
+    const per = (await mkPeriod(instA.id, adminA, { anio: 2024, numero: 44 })).data;
+    track(world, 'academic_periods', per.id);
+
+    expectError(
+      await mkPeriod(instA.id, adminA, { anio: 2024, numero: 44 }),
+      409,
+      'Ya existe un período con el mismo número para esta institución y año.'
+    );
+  });
+
+  await test('el mismo número y año en otra institución es válido', async () => {
+    const pa = (await mkPeriod(instA.id, adminA, { anio: 2023, numero: 44 })).data;
+    track(world, 'academic_periods', pa.id);
+    const pb = (await mkPeriod(instB.id, adminB, { anio: 2023, numero: 44 })).data;
+    track(world, 'academic_periods', pb.id);
+    equal(pa.institucion_id, instA.id, 'pertenece a A');
+    equal(pb.institucion_id, instB.id, 'pertenece a B');
+  });
+
+  await test('P1-2025 y P1-2026 pueden coexistir (años separados)', async () => {
+    const p25 = (await mkPeriod(instA.id, adminA, { anio: 2025, numero: 1 })).data;
+    track(world, 'academic_periods', p25.id);
+    const p26 = (await mkPeriod(instA.id, adminA, { numero: 9, anio: 2026 })).data;
+    track(world, 'academic_periods', p26.id);
+    equal(p25.anio, 2025, 'año 2025');
+    equal(p26.anio, 2026, 'año 2026');
+  });
+
+  await test('no se puede cambiar el año de un período con evaluaciones (409)', async () => {
+    const per = (await mkPeriod(instA.id, adminA, { anio: 2022, numero: 22, activo: true })).data;
+    track(world, 'academic_periods', per.id);
+    const ev = (await post('/evaluations', baseEval({ periodo_id: per.id }), teacherA)).data;
+    track(world, 'evaluations', ev.id);
+
+    expectError(
+      await put(`/academic_periods/${per.id}`, {
+        institucion_id: instA.id, nombre: 'Periodo 1', numero: 22, anio: 2021, activo: false,
+      }, adminA),
+      409,
+      'No se puede cambiar el año o el número de un período que ya tiene evaluaciones, notas o asistencia.'
+    );
+  });
+
+  await test('no se puede cambiar el número de un período con notas (409)', async () => {
+    const per = (await mkPeriod(instA.id, adminA, { anio: 2021, numero: 24, activo: true })).data;
+    track(world, 'academic_periods', per.id);
+    const ev = (await post('/evaluations', baseEval({ periodo_id: per.id }), teacherA)).data;
+    track(world, 'evaluations', ev.id);
+    const mark = (await post('/marks', baseMark({ evaluacion_id: ev.id }), teacherA)).data;
+    track(world, 'marks', mark.id);
+
+    expectError(
+      await put(`/academic_periods/${per.id}`, {
+        institucion_id: instA.id, nombre: 'Periodo 1', numero: 25, anio: 2021, activo: false,
+      }, adminA),
+      409,
+      'No se puede cambiar el año o el número de un período que ya tiene evaluaciones, notas o asistencia.'
+    );
+  });
+
+  await test('cambiar año y número de un período SIN datos es válido', async () => {
+    const per = (await mkPeriod(instA.id, adminA, { anio: 2020, numero: 26 })).data;
+    track(world, 'academic_periods', per.id);
+
+    const res = await put(`/academic_periods/${per.id}`, {
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: 27, anio: 2019, activo: false,
+    }, adminA);
+    equal(res.status, 200, 'status');
+    equal(res.data.numero, 27, 'número actualizado');
+    equal(res.data.anio, 2019, 'año actualizado');
+  });
+
+  await test('reabrir un período cerrado sigue permitido', async () => {
+    const per = (await mkPeriod(instA.id, adminA, { anio: 2018, numero: 28, activo: true })).data;
+    track(world, 'academic_periods', per.id);
+    const ev = (await post('/evaluations', baseEval({ periodo_id: per.id }), teacherA)).data;
+    track(world, 'evaluations', ev.id);
+
+    await put(`/academic_periods/${per.id}`, {
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: 28, anio: 2018, activo: false,
+    }, adminA);
+
+    const res = await put(`/academic_periods/${per.id}`, {
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: 28, anio: 2018, activo: true,
+    }, adminA);
+    equal(res.status, 200, 'reapertura permitida');
+    equal(res.data.activo, true, 'queda abierto');
   });
 }

@@ -16,7 +16,7 @@ export const Modal: React.FC<ModalProps> = ({ onClose, children, size = 'lg' }) 
     onClick={onClose}
   >
     <div
-      className={`bg-white rounded-2xl shadow-xl ${WIDTHS[size]} w-full p-6 space-y-4`}
+      className={`bg-white rounded-2xl shadow-xl ${WIDTHS[size]} w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4`}
       onClick={e => e.stopPropagation()}
     >
       {children}

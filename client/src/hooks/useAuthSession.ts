@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, getAuthToken, setAuthToken, UNAUTHORIZED_EVENT } from '../services/api';
+import { buildLoginPayload } from '../lib/loginPayload';
 import type { Institution, User } from '../types';
 
 const USER_KEY = 'edu_platform_user';
@@ -75,11 +76,19 @@ export function useAuthSession({
     return false;
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  /**
+   * El estudiante entra con su número de identificación (la institución la
+   * resuelve el backend desde el usuario encontrado); el resto de roles entra
+   * con su correo. El frontend nunca pide ni envía subdominio.
+   */
+  const login = async (identifier: string, password: string): Promise<boolean> => {
     try {
       setAuthError(null);
       clearDataError();
-      const { token, user: authenticated } = await api.login(email, password);
+
+      const payload = buildLoginPayload(identifier, password);
+
+      const { token, user: authenticated } = await api.login(payload);
       setAuthToken(token);
 
       const userInstitution = institutions.find(inst => inst.id === authenticated.institucion_id);

@@ -33,7 +33,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
       className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
       onClick={e => e.stopPropagation()}
     >
-      <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-t-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-t-2xl p-4 sm:p-6 text-white">
         <div className="flex items-start justify-between">
           <h3 className="text-xl font-bold">Credenciales</h3>
           <button
@@ -54,7 +54,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({
         </div>
       </div>
 
-      <div className="p-6 flex justify-end">
+      <div className="p-4 sm:p-6 flex justify-end">
         <button
           onClick={onClose}
           className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-sm transition-colors"

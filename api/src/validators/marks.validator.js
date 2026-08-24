@@ -1,10 +1,6 @@
 import { HttpError } from '../shared/http-error.js';
 import { gradingScaleFor, evaluationById, periodById } from '../repositories/resource.repository.js';
 
-/** Nota máxima según el tipo de institución: 0-5 universidad, 0-10 colegio. */
-const NOTA_MAXIMA = { universidad: 5, colegio: 10 };
-const notaMaximaPara = (tipo) => NOTA_MAXIMA[tipo] ?? NOTA_MAXIMA.colegio;
-
 export async function validateMark(data, existingRow) {
   if (!data.evaluacion_id && !existingRow?.evaluacion_id) {
     throw new HttpError(400, 'La evaluación es obligatoria para registrar notas.');
@@ -18,10 +14,10 @@ export async function validateMark(data, existingRow) {
     const gradeId = data.grado_id ?? existingRow?.grado_id;
     if (!gradeId) throw new HttpError(400, 'Falta grado_id.');
 
-    const tipo = await gradingScaleFor(gradeId);
-    if (!tipo) throw new HttpError(400, 'Grado no encontrado.');
+    const max = await gradingScaleFor(gradeId);
+    if (!max) throw new HttpError(400, 'Grado no encontrado.');
 
-    const max = notaMaximaPara(tipo);
+    // La escala de la institución define el tope: las notas van de 0 a escala_maxima.
     if (data.nota < 0 || data.nota > max) {
       throw new HttpError(400, `La nota debe estar entre 0 y ${max}.`);
     }

@@ -1,0 +1,32 @@
+<div class="boletin">
+  <header>
+    <h1>{{institution.nombre}} — Boletín {{period.nombre}} {{period.anio}}</h1>
+    <p class="sub">Escala {{summary.escalaMaxima}} · Nota mínima {{summary.notaMinimaAprobacion}}</p>
+  </header>
+  <section class="estudiante">
+    <h2>{{student.nombre}} {{student.apellido}}</h2>
+    <p>Identificación: {{student.tipo_documento}} {{student.identificacion}} · Grado: {{grade.nombre}} · Edad: {{student.edad}} · Género: {{student.genero}}</p>
+  </section>
+  <section class="materias">
+    <h3>Materias</h3>
+    <table>
+      <thead><tr><th>Materia</th><th>Docente</th><th>Promedio</th><th>Desempeño</th><th>Estado</th></tr></thead>
+      <tbody>
+        {{#each subjects}}
+        <tr>
+          <td>{{materia}}</td>
+          <td>{{docente}}</td>
+          <td>{{promedio}}</td>
+          <td>{{desempeno}}</td>
+          <td>{{estado}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </section>
+  <section class="resumen">
+    <p><strong>Promedio General: {{summary.promedioGeneral}}</strong> — {{summary.estadoGlobal}}</p>
+    <p>Asistencia: presente {{attendance.presente}} · ausente {{attendance.ausente}} · justificadas {{attendance.justificada}} · tasa {{attendance.tasa}}%</p>
+  </section>
+  <footer><p>Generado el {{period.anio}} · {{institution.nombre}}</p></footer>
+</div>

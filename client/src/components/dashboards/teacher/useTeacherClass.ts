@@ -85,7 +85,7 @@ export function useTeacherClass(selectedAssignId: string) {
     gradeStudents,
     activeEvals: activePeriodEvals,
     marks,
-    notaMax: maxScoreFor(currentInstitution?.tipo),
+    notaMax: maxScoreFor(currentInstitution),
     periods,
     selectedPeriodId,
     activePeriod,
