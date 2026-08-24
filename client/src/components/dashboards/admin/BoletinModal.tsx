@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileSpreadsheet, FileText, Loader2, ShieldAlert } from 'lucide-react';
+import { FileText, Loader2, ShieldAlert } from 'lucide-react';
 import { api } from '../../../services/api';
 import { API_BASE, getAuthToken } from '../../../services/http';
 import { useApp } from '../../../context/useApp';
 import { fullName } from '../../../lib/people';
 import { gradeLabel } from '../../../lib/people';
-import { boletinChoices, periodLabel, periodsOfYear, yearsOf } from '../../../lib/periods';
-import { renderBoletinPeriodExcel } from '../../../lib/reports/renderers/period-excel';
-import { renderBoletinExcel } from '../../../lib/reports/renderers/excel';
+import { yearsOf } from '../../../lib/periods';
 import { Modal, Field, INPUT } from '../../ui';
 import type { AcademicPeriod, User } from '../../../types';
 
@@ -16,28 +14,14 @@ interface BoletinModalProps {
   onClose: () => void;
 }
 
-type Selection = { mode: 'period'; periodId: string } | { mode: 'all'; anio: number };
-
-/** Generación de boletín por período o anual (solo Excel). El sistema PDF fue eliminado. */
 export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) => {
   const { user, grades, studentGrades } = useApp();
   const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selection, setSelection] = useState<Selection | null>(null);
-  const [busy, setBusy] = useState<'pdf' | 'excel' | null>(null);
+  const [busy, setBusy] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const instId = user?.institucion_id;
-
-  /** Selección por defecto de un año: el período abierto, el primero, o "Todos". */
-  const defaultSelection = (lista: AcademicPeriod[], año: number): Selection => {
-    const delAño = periodsOfYear(lista, año);
-    const abierto = delAño.find(p => p.activo && p.id);
-    if (abierto?.id) return { mode: 'period', periodId: abierto.id };
-    const primero = delAño[0];
-    if (primero?.id) return { mode: 'period', periodId: primero.id };
-    return { mode: 'all', anio: año };
-  };
 
   useEffect(() => {
     let activo = true;
@@ -50,7 +34,6 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
           const años = yearsOf(propios);
           const inicial = años[0] ?? null;
           setSelectedYear(inicial);
-          if (inicial !== null) setSelection(defaultSelection(propios, inicial));
         })
         .catch(() => setError('No se pudieron cargar los períodos académicos.'));
     }
@@ -61,50 +44,17 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
 
   const onYearChange = (anio: number) => {
     setSelectedYear(anio);
-    setSelection(defaultSelection(periods, anio));
   };
-
-  const choices = useMemo(
-    () => (selectedYear === null ? [] : boletinChoices(periods, selectedYear)),
-    [periods, selectedYear]
-  );
-
-  const selectedPeriod = useMemo(() => {
-    if (!selection || selection.mode !== 'period') return null;
-    return periods.find(p => p.id === selection.periodId) || null;
-  }, [periods, selection]);
 
   const grade = studentGrades.find(sg => sg.estudiante_id === student.id);
   const gradeNombre = grade ? gradeLabel(grades.find(g => g.id === grade.grado_id)) : 'Sin asignar';
 
-  const generar = async () => {
-    if (!selection || selectedYear === null) return setError('Selecciona un período académico.');
-    setBusy('excel');
-    setError(null);
-    try {
-      if (selection.mode === 'period') {
-        const data = await api.getStudentReport(student.id, selection.periodId);
-        renderBoletinPeriodExcel(data);
-      } else {
-        const data = await api.getStudentYearReport(student.id, selection.anio);
-        renderBoletinExcel(data, data.institution.reportConfig ?? null);
-      }
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el boletín.');
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const descargarPDF = async () => {
-    if (!selection) return setError('Selecciona un período académico para el PDF.');
-    const anio = selection.mode === 'all' ? selection.anio : selectedYear || new Date().getFullYear();
-    if (!anio) return setError('Selecciona un año para el PDF.');
-    setBusy('pdf');
+    if (selectedYear === null) return setError('Selecciona un año académico.');
+    setBusy(true);
     setError(null);
     try {
-      const url = `${API_BASE}/students/${encodeURIComponent(student.id)}/report/pdf?anio=${encodeURIComponent(anio)}`;
+      const url = `${API_BASE}/students/${encodeURIComponent(student.id)}/report/pdf?anio=${encodeURIComponent(selectedYear)}`;
       const token = getAuthToken();
       let response: Response;
       try {
@@ -120,12 +70,14 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
         try {
           const data = await response.json();
           if (data?.error) msg = String(data.error);
-        } catch {}
+        } catch {
+          // ignore json parse error
+        }
         throw new Error(msg);
       }
       const blob = await response.blob();
       const disposition = response.headers.get('Content-Disposition');
-      let filename = `boletin_${anio}.pdf`;
+      let filename = `boletin_${selectedYear}.pdf`;
       if (disposition) {
         const m = /filename\*=(?:UTF-8''|")([^";]+)"/i.exec(disposition) || /filename=([^;]+)/i.exec(disposition);
         if (m) filename = m[1].replace(/^"|"$/g, '');
@@ -141,21 +93,15 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo generar el PDF.');
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
-
-  const resumen = (() => {
-    if (!selection) return null;
-    if (selection.mode === 'all') return `Todos los períodos — ${selection.anio}`;
-    return selectedPeriod ? periodLabel(selectedPeriod) : null;
-  })();
 
   return (
     <Modal onClose={onClose} size="lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-900">Generar Boletín</h3>
-        <span className="text-xs text-gray-400">Documento individual por período o anual</span>
+        <span className="text-xs text-gray-400">Documento anual en PDF</span>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-5">
@@ -175,52 +121,23 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
           Esta institución aún no tiene períodos académicos definidos. Crea períodos en la sección Periodos.
         </p>
       ) : (
-        <>
-          <Field label="Año académico" className="mb-5">
-            <select
-              value={selectedYear ?? ''}
-              onChange={e => onYearChange(Number(e.target.value))}
-              className={INPUT}
-            >
-              {years.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Boletín" className="mb-5">
-            <select
-              value={
-                selection?.mode === 'period'
-                  ? `period:${selection.periodId}`
-                  : selection?.mode === 'all'
-                    ? `all:${selection.anio}`
-                    : ''
-              }
-              onChange={e => {
-                const [mode, id] = e.target.value.split(':');
-                if (mode === 'period') {
-                  setSelection({ mode: 'period', periodId: id });
-                } else if (mode === 'all') {
-                  setSelection({ mode: 'all', anio: Number(id) });
-                }
-              }}
-              className={INPUT}
-            >
-              {choices.map((c, i) => (
-                <option key={c.type === 'period' ? `p-${c.periodId}` : `a-${i}`} value={c.type === 'period' ? `period:${c.periodId}` : `all:${selectedYear}`}>
-                  {c.label}{c.type === 'period' && selectedPeriod?.activo ? ' (activo)' : ''}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </>
+        <Field label="Año académico" className="mb-5">
+          <select
+            value={selectedYear ?? ''}
+            onChange={e => onYearChange(Number(e.target.value))}
+            className={INPUT}
+          >
+            {years.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </Field>
       )}
 
-      {resumen && (
+      {selectedYear !== null && (
         <p className="text-sm text-gray-600 mb-5">
-          ¿Estás seguro de que deseas descargar el boletín de{' '}
-          <strong>{fullName(student)}</strong> correspondiente al <strong>{resumen}</strong>?
+          ¿Estás seguro de que deseas descargar el boletín anual de{' '}
+          <strong>{fullName(student)}</strong> correspondiente al año <strong>{selectedYear}</strong>?
         </p>
       )}
 
@@ -241,21 +158,12 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
         </button>
         <button
           type="button"
-          disabled={!selection || busy !== null}
+          disabled={selectedYear === null || busy}
           onClick={() => descargarPDF()}
           className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-q10-600 hover:bg-q10-700 text-white font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
         >
-          {busy === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-          Descargar PDF
-        </button>
-        <button
-          type="button"
-          disabled={!selection || busy !== null}
-          onClick={() => generar()}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-        >
-          {busy === 'excel' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-          Descargar Excel
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+          Generar PDF
         </button>
       </div>
     </Modal>

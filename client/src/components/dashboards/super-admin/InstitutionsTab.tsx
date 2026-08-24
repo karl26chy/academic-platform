@@ -370,7 +370,9 @@ const EditInstitutionModal: React.FC<{
       try {
         const data = await http.get<{ id: string; name: string }[]>('/report-templates');
         if (!cancelled && Array.isArray(data) && data.length > 0) setTemplates(data);
-      } catch {}
+      } catch {
+        // ignore templates load error
+      }
       try {
         const cfg = await http.get<{
           config?: { template_id?: string };

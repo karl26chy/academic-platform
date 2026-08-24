@@ -13,7 +13,7 @@
 #
 #  Puertos host:
 #    db     -> 55432  (evita colisión con PG nativo y con docker-compose.yml)
-#    api    -> 5000
+#    api    -> 5050 (evita colisión con docker-compose.yml y rubato-backend)
 #    client -> 5173
 # ============================================================
 name: pruebas-app-local
@@ -55,7 +55,7 @@ services:
       - ./api/schema.sql:/app/schema.sql
       - ./api/assets:/app/assets
     ports:
-      - "5000:5000"
+      - "${API_LOCAL_PORT:-5050}:5000"
     depends_on:
       db:
         condition: service_healthy

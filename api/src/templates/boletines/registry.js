@@ -20,43 +20,69 @@ export const templates = [
   },
 ];
 
+/**
+ * Firma ligera de la plantilla: mtimes del HTML y el CSS (+ archivos de .img).
+ * Permite recargar en caliente al editar una plantilla, sin reiniciar el API.
+ */
+function firmaTemplate(entry) {
+  const htmlPath = path.join(here, entry.htmlPath);
+  const cssPath = path.join(here, entry.cssPath);
+  let sig = `${fs.statSync(htmlPath).mtimeMs}|${fs.statSync(cssPath).mtimeMs}`;
+  const imgDir = path.join(here, path.dirname(entry.htmlPath), '.img');
+  if (fs.existsSync(imgDir)) {
+    for (const file of fs.readdirSync(imgDir).sort()) {
+      const filePath = path.join(imgDir, file);
+      if (fs.statSync(filePath).isFile()) {
+        sig += `|${file}:${fs.statSync(filePath).mtimeMs}`;
+      }
+    }
+  }
+  return sig;
+}
+
+/** Lee HTML+CSS desde disco y convierte las imágenes de .img/ a data URI. */
+function loadTemplate(entry) {
+  let html = fs.readFileSync(path.join(here, entry.htmlPath), 'utf8');
+  const css = fs.readFileSync(path.join(here, entry.cssPath), 'utf8');
+
+  // Si existe carpeta .img/ dentro del template, inyectar imágenes como data URI
+  const imgDir = path.join(here, path.dirname(entry.htmlPath), '.img');
+  const images = {};
+  if (fs.existsSync(imgDir)) {
+    const files = fs.readdirSync(imgDir);
+    for (const file of files) {
+      const filePath = path.join(imgDir, file);
+      if (fs.statSync(filePath).isFile()) {
+        const buffer = fs.readFileSync(filePath);
+        const base64 = buffer.toString('base64');
+        const ext = path.extname(file).toLowerCase();
+        let mime = 'image/png';
+        if (ext === '.webp') mime = 'image/webp';
+        else if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
+        else if (ext === '.svg') mime = 'image/svg+xml';
+        else if (ext === '.gif') mime = 'image/gif';
+        else if (ext === '.png') mime = 'image/png';
+        images[file] = `data:${mime};base64,${base64}`;
+      }
+    }
+    // Reemplazar src=".img/NOMBRE" por data URI
+    html = html.replace(/src=["']\.img\/([^"']+)["']/g, (match, nombre) => {
+      const dataUri = images[nombre];
+      if (dataUri) return `src="${dataUri}"`;
+      return match;
+    });
+  }
+
+  return { html, css, images };
+}
+
 export function getTemplateById(id) {
   const entry = templates.find(t => t.id === id);
   if (!entry) return null;
-  if (!cache.has(id)) {
-    let html = fs.readFileSync(path.join(here, entry.htmlPath), 'utf8');
-    const css = fs.readFileSync(path.join(here, entry.cssPath), 'utf8');
-
-    // Si existe carpeta .img/ dentro del template, inyectar imágenes como data URI
-    const imgDir = path.join(here, path.dirname(entry.htmlPath), '.img');
-    const images = {};
-    if (fs.existsSync(imgDir)) {
-      const files = fs.readdirSync(imgDir);
-      for (const file of files) {
-        const filePath = path.join(imgDir, file);
-        if (fs.statSync(filePath).isFile()) {
-          const buffer = fs.readFileSync(filePath);
-          const base64 = buffer.toString('base64');
-          const ext = path.extname(file).toLowerCase();
-          let mime = 'image/png';
-          if (ext === '.webp') mime = 'image/webp';
-          else if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
-          else if (ext === '.svg') mime = 'image/svg+xml';
-          else if (ext === '.gif') mime = 'image/gif';
-          else if (ext === '.png') mime = 'image/png';
-          images[file] = `data:${mime};base64,${base64}`;
-        }
-      }
-      // Reemplazar src=".img/NOMBRE" por data URI antes de cachear
-      html = html.replace(/src=["']\.img\/([^"']+)["']/g, (match, nombre) => {
-        const dataUri = images[nombre];
-        if (dataUri) return `src="${dataUri}"`;
-        return match;
-      });
-    }
-
-    cache.set(id, { ...entry, html, css, images });
-  }
+  const sig = firmaTemplate(entry);
+  const cached = cache.get(id);
+  if (cached && cached.sig === sig) return cached;
+  cache.set(id, { ...entry, sig, ...loadTemplate(entry) });
   return cache.get(id);
 }
 

@@ -1,5 +1,9 @@
 FROM node:20-alpine
 
+# Chromium para puppeteer-core (generación de boletines PDF), igual que Dockerfile.dev
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./

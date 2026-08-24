@@ -325,11 +325,13 @@ export default async function reportsSuite(world) {
     await addMark(ctx, ctx.student.id, 4.5, 30, p2);
 
     const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
-    equal(res.periods.length, 2, 'dos períodos en el año');
+    equal(res.periods.length, 4, 'cuatro períodos en el año');
     equal(res.subjects.length, 1, 'una materia');
-    equal(res.subjects[0].porPeriodo.length, 2, 'dos bloques por materia');
+    equal(res.subjects[0].porPeriodo.length, 4, 'cuatro bloques por materia');
     equal(res.subjects[0].porPeriodo[0].valoracion, 4.0, 'P1 = 4.0');
     equal(res.subjects[0].porPeriodo[1].valoracion, 4.5, 'P2 = 4.5');
+    equal(res.subjects[0].porPeriodo[2].valoracion, null, 'P3 = null');
+    equal(res.subjects[0].porPeriodo[3].valoracion, null, 'P4 = null');
     equal(res.subjects[0].definitiva, 4.25, 'definitiva = promedio de los períodos con dato');
     equal(res.summary.promedioGeneralDefinitivo, 4.25, 'promedio general definitivo');
   });
@@ -355,7 +357,7 @@ export default async function reportsSuite(world) {
     await openPeriod(ctx, p2);
 
     const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
-    equal(res.periods.length, 2, 'dos períodos');
+    equal(res.periods.length, 4, 'cuatro períodos');
     equal(res.subjects[0].porPeriodo[1].valoracion, null, 'P2 sin valoración');
     equal(res.subjects[0].definitiva, 4.0, 'definitiva usa solo P1 (no divide entre 0)');
   });
@@ -466,7 +468,7 @@ export default async function reportsSuite(world) {
     const r2026 = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     equal(r2026.year, 2026, 'año 2026');
     ok(r2026.periods.every(p => Number(p.period.anio) === 2026), 'solo períodos de 2026');
-    equal(r2026.subjects[0].porPeriodo.length, 1, '2026 tiene 1 período');
+    equal(r2026.subjects[0].porPeriodo.length, 4, '2026 tiene 4 períodos');
     equal(r2026.subjects[0].definitiva, 4.0, 'la definitiva de 2026 no incluye 2025');
 
     const r2025 = (await get(`/students/${ctx.student.id}/report?anio=2025`, ctx.adminToken)).data;

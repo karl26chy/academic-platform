@@ -13,7 +13,7 @@
             <img class="logo-colegio" src=".img/image0.webp" alt="Escudo institucional">
             <div class="header-content">
                 <h1 class="nombre-colegio">{{institution.nombre}}</h1>
-                <p class="lema">"LO IMPORTANTE NO ES LLEGAR PRIMERO SINO SABER LLEGAR — LÍDERES DEL FUTURO"</p>
+                <p class="lema">“No habrá desarrollo sin educación, ni progreso sin cultura.” -Alberto assa. </p>
                 <h2 class="titulo-informe">INFORME ACADÉMICO Y CONVIVENCIAL</h2>
             </div>
         </header>
@@ -49,10 +49,9 @@
                     <tr>
                         <th>#</th>
                         <th>ÁREA / ASIGNATURA</th>
-                        <th>1</th>
-                        <th>2</th>
-                        <th>3</th>
-                        <th>4</th>
+                        {{#each periods}}
+                        <th>{{this.period.numero}}</th>
+                        {{/each}}
                         <th>DEFINITIVA</th>
                         <th>DESEMPEÑO</th>
                         <th>LOGROS</th>

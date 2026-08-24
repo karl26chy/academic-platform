@@ -34,6 +34,8 @@ body {
     border-bottom: 2px solid #C29227;
     padding-top: 10px;
     padding-bottom: 12px;
+    padding-left: 20px;  /* Controla el espacio inicial a la izquierda */
+    padding-right: 20px; /* Controla el espacio final a la derecha */
     margin-bottom: 18px;
     background-color: #FCFAEF;
 }
@@ -42,7 +44,6 @@ body {
     width: 80px;
     height: 80px;
     object-fit: contain;
-    margin-right: 16px;
     flex-shrink: 0;
 }
 
@@ -59,6 +60,7 @@ body {
     font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 0.5px;
+    margin-left: -60px;
 }
 
 .lema {
@@ -66,12 +68,7 @@ body {
     font-weight: bold;
     color: #4b5563;
     margin-top: 2px;
-}
-
-.resolucion {
-    font-size: 0.7rem;
-    color: #6b7280;
-    margin-top: 2px;
+    margin-left: -60px;
 }
 
 .titulo-informe {
@@ -79,6 +76,7 @@ body {
     color: #111827;
     margin-top: 10px;
     font-weight: 700;
+    margin-left: -60px;
 }
 
 .periodo-tag {
@@ -159,16 +157,6 @@ body {
     color: #b91c1c;
 }
 
-.row-promedio {
-    background-color: #FAF2E1 !important;
-    border-top: 2px solid #C29227;
-    border-bottom: 2px solid #C29227;
-}
-
-.row-promedio td {
-    color: #7A0C16;
-}
-
 /* Badges de estado */
 .badge {
     padding: 2px 6px;
@@ -183,8 +171,8 @@ body {
 }
 
 .badge.reprobado {
-    background-color: hsl(0, 0%, 100%);
-    color: #eb0404;
+    background-color: #fee2e2;
+    color: #b91c1c;
 }
 
 /* Cuadrícula inferior (Asistencia, Observaciones, Escala) */
@@ -269,7 +257,8 @@ body {
 /* Pie de página */
 .footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* Centra los elementos horizontalmente */
+    text-align: center;
     border-top: 1px solid #EEDEA8;
     padding-top: 8px;
     font-size: 0.68rem;
@@ -278,10 +267,16 @@ body {
 
 /* Adaptación para impresión */
 @media print {
+    @page {
+        size: letter portrait; /* Define explícitamente el tamaño Carta y vertical */
+        margin: 10mm;          /* Margen seguro para la impresora */
+    }
+
     body {
         background-color: #ffffff;
         padding: 0;
     }
+    
     .boletin-card {
         box-shadow: none;
         border: none;

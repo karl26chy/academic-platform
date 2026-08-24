@@ -102,6 +102,59 @@ async function buildPeriodData(student, period, institution, grade) {
 
   const subjects = [];
   const bySubject = {};
+
+  if (period.virtual) {
+    if (grade) {
+      const assignments = await repo.assignmentsOfGrade(grade.id);
+      for (const assign of assignments) {
+        const subject = {
+          materia_id: assign.materia_id,
+          materia: assign.materia || 'Materia',
+          docente: [assign.docente_nombre, assign.docente_apellido].filter(Boolean).join(' ') || null,
+          evaluaciones: [],
+          promedio: null,
+          desempeno: null,
+          estado: 'Sin notas',
+          fallas: null,
+          justificadas: null,
+        };
+        subjects.push(subject);
+        bySubject[assign.materia_id] = {
+          promedio: null,
+          desempeno: null,
+          hasMarks: false,
+          fallas: null,
+          justificadas: null,
+        };
+      }
+    }
+    return {
+      report: {
+        student: buildStudentBlock(student),
+        institution: buildInstitutionBlock(institution, null),
+        period: {
+          id: period.id,
+          numero: period.numero,
+          nombre: period.nombre,
+          anio: period.anio,
+          fecha_inicio: null,
+          fecha_fin: null,
+          activo: false,
+        },
+        grade: grade ? { id: grade.id, nombre: grade.nombre, tipo_grado: grade.tipo_grado } : null,
+        subjects,
+        attendance: { presente: 0, ausente: 0, justificada: 0, total: 0, tasa: 0 },
+        summary: {
+          promedioGeneral: null,
+          estadoGlobal: 'Sin notas',
+          escalaMaxima,
+          notaMinimaAprobacion: notaMinima,
+        },
+      },
+      bySubject,
+    };
+  }
+
   let allMarks = [];
   let attendanceRows = [];
   let attendanceBySubject = {};
@@ -237,7 +290,21 @@ export async function getYearReport(user, studentId, anio) {
   const institution = await findRaw('institutions', user.institucion_id);
   const config = await repo.reportConfigFor(user.institucion_id);
   const grade = await repo.gradeOfStudent(studentId);
-  const periods = await repo.periodsOfYear(user.institucion_id, anio);
+  const dbPeriods = await repo.periodsOfYear(user.institucion_id, anio);
+  const periods = [1, 2, 3, 4].map(num => {
+    const found = dbPeriods.find(p => Number(p.numero) === num);
+    if (found) return found;
+    return {
+      id: `virtual-${user.institucion_id}-${anio}-${num}`,
+      numero: num,
+      nombre: `Periodo ${num}`,
+      anio: Number(anio),
+      fecha_inicio: null,
+      fecha_fin: null,
+      activo: false,
+      virtual: true,
+    };
+  });
 
   const periodsData = [];
   const perPeriodBySubject = {}; // materia_id → array de { periodIndex, valoracion, desempeno }
