@@ -10,6 +10,48 @@ Handlebars.registerHelper('gte', (a, b) => a !== null && a !== undefined && a >=
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('inc', i => Number(i) + 1);
 
+let cachedBrowser = null;
+let launchingPromise = null;
+
+/**
+ * Obtiene o lanza la instancia Singleton de Puppeteer/Chromium.
+ * Soporta inicialización diferida, llamadas concurrentes y auto-recuperación ante cierres.
+ */
+async function getBrowser() {
+  if (cachedBrowser && cachedBrowser.connected) {
+    return cachedBrowser;
+  }
+  if (launchingPromise) {
+    return launchingPromise;
+  }
+
+  launchingPromise = (async () => {
+    try {
+      const browser = await puppeteer.launch({
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+      });
+      browser.on('disconnected', () => {
+        if (cachedBrowser === browser) {
+          cachedBrowser = null;
+        }
+      });
+      cachedBrowser = browser;
+      return browser;
+    } finally {
+      launchingPromise = null;
+    }
+  })();
+
+  return launchingPromise;
+}
+
 export async function renderReportPDF(studentId, anio, institucionId) {
   if (!studentId || !anio || !institucionId) {
     throw new HttpError(400, 'Faltan parámetros para generar el boletín.');
@@ -48,20 +90,16 @@ export async function renderReportPDF(studentId, anio, institucionId) {
   const css = entry.css || '';
   const htmlFinal = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${htmlBody}</body></html>`;
 
-  let browser;
+  let page;
   try {
-    browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(htmlFinal, { waitUntil: 'networkidle0' });
+    const browser = await getBrowser();
+    page = await browser.newPage();
+    await page.setContent(htmlFinal, { waitUntil: 'load' });
     const buffer = await page.pdf({ format: 'letter', printBackground: true });
     return buffer;
   } finally {
-    if (browser) {
-      await browser.close().catch(() => {});
+    if (page) {
+      await page.close().catch(() => {});
     }
   }
 }
