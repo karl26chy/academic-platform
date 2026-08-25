@@ -398,3 +398,46 @@ export async function countInstitutionDependencies(instId) {
   );
   return rows[0];
 }
+
+/**
+ * Elimina una evaluación y todas sus notas asociadas de forma transaccional.
+ */
+export async function deleteEvaluationWithMarks(evaluationId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM marks WHERE "evaluacion_id" = $1', [evaluationId]);
+    const { rows } = await client.query('DELETE FROM evaluations WHERE "id" = $1 RETURNING *', [evaluationId]);
+    await client.query('COMMIT');
+    return rows[0] ? sanitizeRow('evaluations', rows[0]) : undefined;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Elimina un estudiante y limpia todas sus dependencias asociadas de forma transaccional.
+ */
+export async function deleteStudentWithData(studentId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM student_observations WHERE "estudiante_id" = $1', [studentId]);
+    await client.query('DELETE FROM citations WHERE "estudiante_id" = $1', [studentId]);
+    await client.query('DELETE FROM attendance WHERE "estudiante_id" = $1', [studentId]);
+    await client.query('DELETE FROM marks WHERE "estudiante_id" = $1', [studentId]);
+    await client.query('DELETE FROM student_grades WHERE "estudiante_id" = $1', [studentId]);
+    const { rows } = await client.query('DELETE FROM users WHERE "id" = $1 RETURNING *', [studentId]);
+    await client.query('COMMIT');
+    return rows[0] ? sanitizeRow('users', rows[0]) : undefined;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+

@@ -1,6 +1,8 @@
-import { get, post, put, login } from '../helpers/http.js';
+import { get, post, put, login, del } from '../helpers/http.js';
 import { track } from '../helpers/fixtures.js';
 import { suite, test, equal, ok, notOk, expectError } from '../helpers/runner.js';
+import pool from '../../src/db/pool.js';
+
 
 /**
  * Reporte académico individual por período:
@@ -475,5 +477,74 @@ export default async function reportsSuite(world) {
     equal(r2025.year, 2025, 'año 2025');
     ok(r2025.periods.every(p => Number(p.period.anio) === 2025), 'solo períodos de 2025');
     equal(r2025.subjects[0].definitiva, 2.0, 'la definitiva de 2025 usa solo 2025');
+  });
+
+  await test('regresión: borrar evaluación elimina físicamente las notas asociadas y actualiza reportes (Dashboard)', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const mark = await addMark(ctx, ctx.student.id, 8.0, 30);
+
+    const listBefore = (await get('/marks', ctx.adminToken)).data;
+    ok(listBefore.some(m => m.id === mark.id), 'la calificación existe antes de borrar la evaluación');
+
+    const reportBefore = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(reportBefore.subjects[0].definitiva, 8.0, 'el reporte muestra promedio 8.0 antes de borrar');
+
+    // Borrar la evaluación
+    await del(`/evaluations/${mark.evaluacion_id}`, ctx.adminToken);
+
+    // Verificar que la calificación fue borrada físicamente
+    const listAfter = (await get('/marks', ctx.adminToken)).data;
+    notOk(listAfter.some(m => m.id === mark.id), 'la calificación fue borrada físicamente al eliminar la evaluación');
+
+    // Verificar que el reporte se recalcula a null (sin notas)
+    const reportAfter = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(reportAfter.subjects[0].definitiva, null, 'el reporte ya no muestra promedio (Dashboard = 0)');
+  });
+
+  await test('regresión: borrar estudiante limpia todas las dependencias asociadas (sin registros huérfanos)', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const mark = await addMark(ctx, ctx.student.id, 8.0, 30);
+    const att = (await post('/attendance', {
+      estudiante_id: ctx.student.id, materia_id: ctx.subject.id, grado_id: ctx.grade.id,
+      fecha: '2026-02-10', periodo_id: ctx.period.id, registrado_por: ctx.teacher.id, estado: 'presente'
+    }, su)).data;
+    track(world, 'attendance', att.id);
+
+    const listMarksBefore = (await get('/marks', ctx.adminToken)).data;
+    ok(listMarksBefore.some(m => m.id === mark.id), 'la calificación del estudiante existe');
+    const listAttBefore = (await get('/attendance', ctx.adminToken)).data;
+    ok(listAttBefore.some(a => a.id === att.id), 'la asistencia del estudiante existe');
+
+    // Borrar al estudiante usando el token de super admin
+    await del(`/users/${ctx.student.id}`, su);
+
+    // Verificar que no existen registros asociados al estudiante
+    const listMarksAfter = (await get('/marks', ctx.adminToken)).data;
+    notOk(listMarksAfter.some(m => m.estudiante_id === ctx.student.id), 'no quedan calificaciones huérfanas');
+
+    const listGradesAfter = (await get('/student_grades', ctx.adminToken)).data;
+    notOk(listGradesAfter.some(sg => sg.estudiante_id === ctx.student.id), 'no quedan matrículas huérfanas');
+
+    const listAttAfter = (await get('/attendance', ctx.adminToken)).data;
+    notOk(listAttAfter.some(a => a.estudiante_id === ctx.student.id), 'no quedan asistencias huérfanas');
+  });
+
+  await test('regresión: blindar reportes (marksOfStudentPeriod) ignora calificaciones huérfanas preexistentes', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const mark = await addMark(ctx, ctx.student.id, 7.5, 30);
+
+    const reportBefore = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(reportBefore.subjects[0].definitiva, 7.5, 'el reporte muestra la nota inicialmente');
+
+    // Eliminar la evaluación DIRECTAMENTE con SQL (bypass de la cascada) para forzar un registro huérfano histórico
+    await pool.query('DELETE FROM evaluations WHERE id = $1', [mark.evaluacion_id]);
+
+    // Verificar que la nota sigue existiendo físicamente en marks
+    const listMarks = (await get('/marks', ctx.adminToken)).data;
+    ok(listMarks.some(m => m.id === mark.id), 'la nota huérfana aún existe físicamente en marks');
+
+    // Verificar que el reporte la ignora y se recalcula a null debido al INNER JOIN
+    const reportAfter = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(reportAfter.subjects[0].definitiva, null, 'el reporte ignora la nota huérfana preexistente');
   });
 }

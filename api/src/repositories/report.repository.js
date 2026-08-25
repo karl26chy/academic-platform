@@ -61,11 +61,12 @@ export async function evaluationsOfPeriod(institucionId, gradeId, periodId) {
 /** Notas de un estudiante dentro de un período. */
 export async function marksOfStudentPeriod(studentId, periodId) {
   const { rows } = await pool.query(
-    `SELECT id, estudiante_id, materia_id, grado_id, evaluacion_id,
-            tipo_evaluacion, fecha_evaluacion, porcentaje, nota, periodo, anio,
-            periodo_id, registrado_por
-     FROM marks
-     WHERE "estudiante_id" = $1 AND "periodo_id" = $2`,
+    `SELECT m.id, m.estudiante_id, m.materia_id, m.grado_id, m.evaluacion_id,
+            m.tipo_evaluacion, m.fecha_evaluacion, m.porcentaje, m.nota, m.periodo, m.anio,
+            m.periodo_id, m.registrado_por
+     FROM marks m
+     INNER JOIN evaluations e ON e.id = m.evaluacion_id
+     WHERE m.estudiante_id = $1 AND m.periodo_id = $2`,
     [studentId, periodId]
   );
   return rows;

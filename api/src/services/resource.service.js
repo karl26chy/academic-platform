@@ -215,6 +215,18 @@ export async function destroy(resource, id, user) {
     }
   }
 
+  if (resource === 'evaluations') {
+    const row = await repo.deleteEvaluationWithMarks(id);
+    if (!row) throw notFound();
+    return row;
+  }
+
+  if (resource === 'users' && existing.rol === 'student') {
+    const row = await repo.deleteStudentWithData(id);
+    if (!row) throw notFound();
+    return row;
+  }
+
   const row = await repo.remove(resource, id);
   if (!row) throw notFound();
   return row;
