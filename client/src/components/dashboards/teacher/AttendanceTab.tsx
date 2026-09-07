@@ -3,6 +3,7 @@ import { AlertTriangle, Lock } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Card, EmptyMessage, ExportButtons, PRIMARY_BUTTON, TableWrapper, TableHead, TableBody, toast } from '../../ui';
 import { periodLabel } from '../../../lib/periods';
+import { studentFullName } from '../../../lib/people';
 import type { AcademicPeriod, Assignment, Subject, Grade, User } from '../../../types';
 
 type Estado = 'presente' | 'ausente' | 'justificada';
@@ -93,7 +94,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   const exportTable = () => ({
     title: `Asistencia ${subject?.nombre}`,
     headers: ['Estudiante', 'Estado'],
-    rows: students.map(s => [`${s.nombre} ${s.apellido}`, estadoDe(s.id)]),
+    rows: students.map(s => [studentFullName(s), estadoDe(s.id)]),
     fileName: `asistencia_${subject?.nombre?.toLowerCase().replace(/\s+/g, '_')}`,
   });
 
@@ -153,7 +154,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
               {students.map(student => (
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="py-3.5 font-medium text-gray-900">
-                    {student.nombre} {student.apellido}
+                    {studentFullName(student)}
                   </td>
                   {ESTADOS.map(estado => (
                     <td key={estado.value} className="py-3.5 text-center">

@@ -8,7 +8,7 @@ import { DeleteUserModal } from './DeleteUserModal';
 import { UserDetailModal } from './UserDetailModal';
 import type { Institution, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
-import { compareStudents } from '../../../lib/people';
+import { compareStudents, studentFullName } from '../../../lib/people';
 
 const ROL_BADGE: Record<string, string> = {
   admin: 'bg-amber-100 text-amber-500',
@@ -110,7 +110,9 @@ export const UsersTab: React.FC<UsersTabProps> = ({
             <TableBody>
               {instUsers.map(u => (
                 <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="py-3 font-medium text-gray-900">{u.nombre} {u.apellido}</td>
+                  <td className="py-3 font-medium text-gray-900">
+                    {u.rol === 'student' ? studentFullName(u) : `${u.nombre} ${u.apellido}`}
+                  </td>
                   <td className="py-3 text-gray-500">{u.email}</td>
                   <td className="py-3 text-center">
                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${ROL_BADGE[u.rol] || ROL_BADGE.student}`}>

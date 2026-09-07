@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { api } from '../../../services/api';
 import type { Grade, Institution, StudentGrade, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
-import { sortStudents } from '../../../lib/people';
+import { sortStudents, studentFullName } from '../../../lib/people';
 
 const FIELD = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none';
 const LABEL = 'block text-xs font-medium text-gray-600 mb-1';
@@ -84,7 +84,7 @@ export const EditStudentGradeModal: React.FC<EditStudentGradeModalProps> = ({
               <option value="">-- Seleccionar --</option>
               {sortStudents(users
                 .filter(u => u.rol === 'student' && u.institucion_id === institution?.id))
-                .map(s => <option key={s.id} value={s.id}>{s.nombre} {s.apellido}</option>)}
+                .map(s => <option key={s.id} value={s.id}>{studentFullName(s)}</option>)}
             </select>
           </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../../../services/api';
 import { Card, EmptyMessage, ExportButtons, INPUT, PRIMARY_BUTTON, TableWrapper, TableHead, TableBody, toast } from '../../ui';
+import { studentFullName } from '../../../lib/people';
 import type { Assignment, Evaluation, Grade, Mark, Subject, User } from '../../../types';
 
 interface MarksTabProps {
@@ -80,7 +81,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({
   const exportTable = () => ({
     title: `Notas ${subject?.nombre}`,
     headers: ['Estudiante', 'Nota'],
-    rows: students.map(s => [`${s.nombre} ${s.apellido}`, effectiveValue(s.id)]),
+    rows: students.map(s => [studentFullName(s), effectiveValue(s.id)]),
     fileName: `notas_${subject?.nombre?.toLowerCase().replace(/\s+/g, '_')}`,
   });
 
@@ -129,7 +130,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({
               {students.map(student => (
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="py-3.5 font-medium text-gray-900">
-                    {student.nombre} {student.apellido}
+                    {studentFullName(student)}
                   </td>
                   <td className="py-2 text-right">
                     <input

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../../context/useApp';
 import { api } from '../../../services/api';
-import { fullName, gradeLabel, sortStudents } from '../../../lib/people';
+import { gradeLabel, sortStudents, studentFullName } from '../../../lib/people';
 import { maxScoreFor } from '../../../lib/grades';
 import type { AcademicPeriod } from '../../../types';
 
@@ -27,7 +27,7 @@ export function useTeacherClass(selectedAssignId: string) {
 
   const getSubjectName = (subjId: string) => subjects.find(s => s.id === subjId)?.nombre || 'Materia';
   const getGradeName = (gradeId: string) => gradeLabel(grades.find(g => g.id === gradeId)) || 'Grado';
-  const getStudentName = (studId: string) => fullName(users.find(u => u.id === studId)) || 'Estudiante';
+  const getStudentName = (studId: string) => studentFullName(users.find(u => u.id === studId)) || 'Estudiante';
 
   // Periodos de la institución del docente, ordenados por año y número.
   useEffect(() => {

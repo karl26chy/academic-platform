@@ -18,6 +18,10 @@ export function getAge(fechaNacimiento?: string): number {
 export const fullName = (user?: Pick<User, 'nombre' | 'apellido'> | null): string =>
   user ? `${user.nombre} ${user.apellido}` : '';
 
+/** Formato visual estándar de estudiantes: "Primer apellido Segundo apellido, Primer nombre Segundo nombre". */
+export const studentFullName = (user?: Pick<User, 'nombre' | 'apellido'> | null): string =>
+  user ? `${user.apellido}, ${user.nombre}` : '';
+
 export const initials = (user: Pick<User, 'nombre' | 'apellido'>): string =>
   `${user.nombre[0] ?? ''}${user.apellido[0] ?? ''}`;
 

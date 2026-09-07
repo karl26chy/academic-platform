@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../../context/useApp';
 import { api } from '../../../services/api';
-import { gradeLabel } from '../../../lib/people';
+import { gradeLabel, studentFullName } from '../../../lib/people';
 import {
   academicYearFromPeriods,
   selectBestPerCourse,
@@ -100,7 +100,7 @@ export function useAcademicRisk() {
         const grade = enrollment ? grades.find(g => g.id === enrollment.grado_id) : null;
         return {
           studentId: st.id,
-          nombre: `${st.nombre} ${st.apellido}`.trim(),
+          nombre: studentFullName(st),
           apellido: st.apellido,
           gradeId: grade?.id ?? null,
           gradeNombre: grade ? gradeLabel(grade) : 'Sin asignar',

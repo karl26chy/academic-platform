@@ -3,8 +3,7 @@ import { FileText, Loader2, ShieldAlert } from 'lucide-react';
 import { api } from '../../../services/api';
 import { API_BASE, getAuthToken } from '../../../services/http';
 import { useApp } from '../../../context/useApp';
-import { fullName } from '../../../lib/people';
-import { gradeLabel } from '../../../lib/people';
+import { gradeLabel, studentFullName } from '../../../lib/people';
 import { yearsOf } from '../../../lib/periods';
 import { Modal, Field, INPUT } from '../../ui';
 import type { AcademicPeriod, User } from '../../../types';
@@ -106,7 +105,7 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
 
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-5">
         <p className="text-sm text-gray-500">
-          Estudiante: <span className="font-bold text-gray-900">{fullName(student)}</span>
+          Estudiante: <span className="font-bold text-gray-900">{studentFullName(student)}</span>
         </p>
         <p className="text-sm text-gray-500">
           Identificación: <span className="font-medium text-gray-700">{student.identificacion || 'N/R'}</span>
@@ -137,7 +136,7 @@ export const BoletinModal: React.FC<BoletinModalProps> = ({ student, onClose }) 
       {selectedYear !== null && (
         <p className="text-sm text-gray-600 mb-5">
           ¿Estás seguro de que deseas descargar el boletín anual de{' '}
-          <strong>{fullName(student)}</strong> correspondiente al año <strong>{selectedYear}</strong>?
+          <strong>{studentFullName(student)}</strong> correspondiente al año <strong>{selectedYear}</strong>?
         </p>
       )}
 

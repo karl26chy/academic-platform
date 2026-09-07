@@ -6,7 +6,7 @@ import { ConfirmDeleteModal } from '../super-admin/ConfirmDeleteModal';
 import { EditAssignmentModal } from '../super-admin/EditAssignmentModal';
 import { EditStudentGradeModal } from '../super-admin/EditStudentGradeModal';
 import { useApp } from '../../../context/useApp';
-import { compareStudents, fullName, gradeLabel, sortStudents } from '../../../lib/people';
+import { compareStudents, fullName, gradeLabel, sortStudents, studentFullName } from '../../../lib/people';
 import type { Assignment, StudentGrade } from '../../../types';
 
 /** Asignaciones (docente + materia + grado) y matrículas de la institución del admin. */
@@ -43,7 +43,7 @@ export const AsignacionesTab: React.FC = () => {
     });
 
   const teacherName = (id: string) => fullName(users.find(u => u.id === id));
-  const studentName = (id: string) => fullName(users.find(u => u.id === id));
+  const studentName = (id: string) => studentFullName(users.find(u => u.id === id));
   const subjectName = (id: string) => subjects.find(s => s.id === id)?.nombre || 'Materia';
   const gradeName = (id: string) => gradeLabel(grades.find(g => g.id === id));
 
@@ -179,7 +179,7 @@ export const AsignacionesTab: React.FC = () => {
             <Field label="Estudiante">
               <select required value={studentId} onChange={e => setStudentId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
-                {misEstudiantes.map(s => <option key={s.id} value={s.id}>{s.nombre} {s.apellido}</option>)}
+                {misEstudiantes.map(s => <option key={s.id} value={s.id}>{studentFullName(s)}</option>)}
               </select>
             </Field>
             <Field label="Grado">

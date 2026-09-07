@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useApp } from '../../../context/useApp';
 import { averageBySubject, weightedAverage } from '../../../lib/grades';
 import { attendanceRateStrict, countByStatus } from '../../../lib/attendance';
-import { fileSlug, fullName, getAge, gradeLabel } from '../../../lib/people';
+import { fileSlug, getAge, gradeLabel, studentFullName } from '../../../lib/people';
 import { documentoCompleto } from '../../../lib/documentTypes';
 import type { BoletinData } from '../../../services/export';
 import type { User } from '../../../types';
@@ -92,7 +92,7 @@ export function useAdminDashboard() {
 
     return {
       institucion: currentInstitution?.nombre || '',
-      estudiante: fullName(student),
+      estudiante: studentFullName(student),
       identificacion: student.identificacion || 'N/R',
       documento: documentoCompleto(student.tipo_documento, student.identificacion),
       grado: getStudentGradeLabel(student.id),

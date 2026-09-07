@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
 import { Card, EmptyMessage, PRIMARY_BUTTON, TableWrapper, TableHead, TableBody, toast } from '../../ui';
+import { studentFullName } from '../../../lib/people';
 import type { AcademicPeriod, User } from '../../../types';
 
 interface ObservacionesTabProps {
@@ -52,7 +53,7 @@ export const ObservacionesTab: React.FC<ObservacionesTabProps> = ({ students, pe
     for (const s of changed) {
       const txt = (records[s.id]||'').trim();
       if (txt.length === 0) continue;
-      if (txt.length > 1000) { toast.error(`Observación de ${s.nombre} excede 1000 caracteres`); return; }
+      if (txt.length > 1000) { toast.error(`Observación de ${studentFullName(s)} excede 1000 caracteres`); return; }
     }
     setSaving(true);
     try {
@@ -67,7 +68,7 @@ export const ObservacionesTab: React.FC<ObservacionesTabProps> = ({ students, pe
         }).then(async res => {
           if (!res.ok) {
             const err = await res.json().catch(()=>({}));
-            throw new Error(err.error || `Error en ${s.nombre}`);
+            throw new Error(err.error || `Error en ${studentFullName(s)}`);
           }
         });
       }));
@@ -107,7 +108,7 @@ export const ObservacionesTab: React.FC<ObservacionesTabProps> = ({ students, pe
           <TableBody>
             {students.map(student => (
               <tr key={student.id} className="hover:bg-gray-50">
-                <td className="py-3.5 font-medium text-gray-900 align-top pt-4">{student.nombre} {student.apellido}</td>
+                <td className="py-3.5 font-medium text-gray-900 align-top pt-4">{studentFullName(student)}</td>
                 <td className="py-2">
                   <textarea
                     value={records[student.id] || ''}

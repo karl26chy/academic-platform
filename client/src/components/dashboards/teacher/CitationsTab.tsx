@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useApp } from '../../../context/useApp';
 import { Card, CardTitle, Field, INPUT, PRIMARY_BUTTON, toast } from '../../ui';
+import { studentFullName } from '../../../lib/people';
 import type { Assignment, User } from '../../../types';
 
 interface CitationsTabProps {
@@ -53,7 +54,7 @@ export const CitationsTab: React.FC<CitationsTabProps> = ({
             <select required value={studentId} onChange={e => setStudentId(e.target.value)} className={INPUT}>
               <option value="">-- Seleccionar --</option>
               {students.map(s => (
-                <option key={s.id} value={s.id}>{s.nombre} {s.apellido}</option>
+                <option key={s.id} value={s.id}>{studentFullName(s)}</option>
               ))}
             </select>
           </Field>

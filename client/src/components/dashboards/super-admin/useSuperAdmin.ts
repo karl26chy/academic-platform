@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useApp } from '../../../context/useApp';
 import { toast } from '../../ui';
-import { fullName, gradeLabel } from '../../../lib/people';
+import { fullName, gradeLabel, studentFullName } from '../../../lib/people';
 
 export interface Feedback {
   type: 'success' | 'error';
@@ -23,8 +23,11 @@ const showMsg = useCallback((type: Feedback['type'], text: string) => {
   const getSubjectLabel = (subjectId: string) =>
     subjects.find(s => s.id === subjectId)?.nombre || 'Desconocida';
 
-  const getUserLabel = (userId: string) =>
-    fullName(users.find(u => u.id === userId)) || 'Desconocido';
+  const getUserLabel = (userId: string) => {
+    const u = users.find(user => user.id === userId);
+    if (!u) return 'Desconocido';
+    return u.rol === 'student' ? studentFullName(u) : fullName(u);
+  };
 
   const getInstName = (instId: string | null) => {
     if (!instId) return 'Sin institución';

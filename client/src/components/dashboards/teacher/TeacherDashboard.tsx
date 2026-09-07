@@ -6,6 +6,7 @@ import { Card, EmptyMessage, Field, INPUT, Tabs, type TabItem } from '../../ui';
 import { MessageComposer, MessageThread, MessageDetailModal } from '../../messaging';
 import { useTeacherClass } from './useTeacherClass';
 import { periodLabel } from '../../../lib/periods';
+import { studentFullName } from '../../../lib/people';
 import { AttendanceTab } from './AttendanceTab';
 import { EvaluationsTab } from './EvaluationsTab';
 import { MarksTab } from './MarksTab';
@@ -193,7 +194,7 @@ export const TeacherDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <MessageComposer
                 title="Enviar Mensaje"
-                recipients={gradeStudents.map(s => ({ id: s.id, label: `${s.nombre} ${s.apellido}` }))}
+                recipients={gradeStudents.map(s => ({ id: s.id, label: studentFullName(s) }))}
                 replyTo={messaging.replyTo}
                 nameOf={getStudentName}
                 recipientId={messaging.form.recipientId}

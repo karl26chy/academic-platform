@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { AcademicReportData } from '../types';
+import { studentFullName } from '../../people';
 
 /**
  * Boletín POR PERÍODO en Excel (SheetJS).
@@ -15,7 +16,7 @@ export function renderBoletinPeriodExcel(data: AcademicReportData) {
     [`Boletín de Calificaciones - ${data.institution.nombre}`],
     [`Período ${per.numero}${per.nombre ? ` (${per.nombre})` : ''} - Año ${per.anio}`],
     [],
-    ['Estudiante', `${data.student.nombre} ${data.student.apellido}`],
+    ['Estudiante', studentFullName(data.student)],
     ['Identificación', ident],
     ['Grado', gradeLabel],
     [],

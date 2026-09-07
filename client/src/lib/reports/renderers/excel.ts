@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import type { AcademicYearReportData, ReportConfig } from '../types';
 import { mergeConfig, reportFileName } from '../template';
+import { studentFullName } from '../../people';
 
 /** Plantilla DEFAULT del boletín anual en Excel (genérica, datos dinámicos). */
 export function renderBoletinExcel(data: AcademicYearReportData, config: ReportConfig | null) {
@@ -11,7 +12,7 @@ export function renderBoletinExcel(data: AcademicYearReportData, config: ReportC
     [`Boletín de Calificaciones - ${data.institution.nombre}`],
     [`Año: ${data.year}`],
     [],
-    ['Estudiante', `${data.student.nombre} ${data.student.apellido}`],
+    ['Estudiante', studentFullName(data.student)],
     ['Documento', `${data.student.tipo_documento || ''} ${data.student.identificacion || ''}`],
     ['Grado', gradeLabel],
     ['Género', data.student.genero || 'N/E'],

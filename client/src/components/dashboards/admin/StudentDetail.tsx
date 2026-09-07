@@ -7,7 +7,7 @@ import { TableWrapper, TableHead, TableBody, StatusBadge, EmptyMessage } from '.
 import { SubjectPerformanceChart } from '../../charts/SubjectPerformanceChart';
 import { averageBySubject, maxScoreFor, weightedAverage } from '../../../lib/grades';
 import { countByStatus } from '../../../lib/attendance';
-import { getAge, initials } from '../../../lib/people';
+import { getAge, initials, studentFullName } from '../../../lib/people';
 import { documentoCompleto } from '../../../lib/documentTypes';
 import { AcademicHistoryView } from '../student/AcademicHistoryView';
 import type { Attendance, Institution, Mark, Subject, User } from '../../../types';
@@ -59,7 +59,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
               {initials(student)}
             </div>
             <div className="min-w-0">
-              <h3 className="text-xl font-bold break-words">{student.nombre} {student.apellido}</h3>
+              <h3 className="text-xl font-bold break-words">{studentFullName(student)}</h3>
               <p className="text-white/80 text-sm">{gradeLabel}</p>
             </div>
           </div>

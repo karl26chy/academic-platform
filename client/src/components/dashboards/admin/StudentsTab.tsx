@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Edit3, Eye, FileText, Filter, Search, UserPlus, X } from 'lucide-react';
 import { Card, EmptyMessage, Field, INPUT, toast } from '../../ui';
 import { useClickOutside } from '../../../hooks/useClickOutside';
-import { getAge } from '../../../lib/people';
+import { getAge, studentFullName } from '../../../lib/people';
 import { documentoCompleto } from '../../../lib/documentTypes';
 import { applyStudentFilters, countActiveFilters } from '../../../lib/studentFilters';
 import { StudentDetail } from './StudentDetail';
@@ -53,6 +53,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
     const q = query.toLowerCase();
     return students
       .filter(s =>
+        studentFullName(s).toLowerCase().includes(q) ||
         `${s.nombre} ${s.apellido}`.toLowerCase().includes(q) ||
         (s.identificacion && s.identificacion.toLowerCase().includes(q)) ||
         s.email.toLowerCase().includes(q)
@@ -119,7 +120,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold text-gray-900 text-sm block truncate">
-                      {s.nombre} {s.apellido}
+                      {studentFullName(s)}
                     </span>
                     <span className="text-xs text-gray-500 block truncate">
                       {documentoCompleto(s.tipo_documento, s.identificacion)} · {getStudentGradeLabel(s.id)}
@@ -224,7 +225,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                     onClick={() => setSelected(selected?.id === s.id ? null : s)}
                     className="flex-1 min-w-0 text-left"
                   >
-                    <span className="font-semibold block">{s.nombre} {s.apellido}</span>
+                    <span className="font-semibold block">{studentFullName(s)}</span>
                     <span className="text-xs text-gray-500 block mt-0.5">
                       {getStudentGradeLabel(s.id)} · {getAge(s.fecha_nacimiento)} años · {s.genero || 'N/E'}
                     </span>
