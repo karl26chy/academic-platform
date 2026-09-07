@@ -31,3 +31,29 @@ export const fileSlug = (user: Pick<User, 'nombre' | 'apellido'>): string =>
     .toLowerCase()
     .replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '');
+
+// ---------------------------------------------------------------------------
+// Comparador centralizado de estudiantes: apellido → nombre → id.
+// Insensible a mayúsculas/minúsculas y tildes (sensitivity: "base").
+// ---------------------------------------------------------------------------
+
+const collator = new Intl.Collator('es', { sensitivity: 'base' });
+
+/** Compara dos estudiantes por apellido, nombre e id. */
+export function compareStudents(
+  a: Pick<User, 'apellido' | 'nombre' | 'id'>,
+  b: Pick<User, 'apellido' | 'nombre' | 'id'>,
+): number {
+  const byApellido = collator.compare(a.apellido, b.apellido);
+  if (byApellido !== 0) return byApellido;
+  const byNombre = collator.compare(a.nombre, b.nombre);
+  if (byNombre !== 0) return byNombre;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/** Devuelve una NUEVA copia del array ordenada sin mutar el original. */
+export function sortStudents<T extends Pick<User, 'apellido' | 'nombre' | 'id'>>(
+  students: T[],
+): T[] {
+  return [...students].sort(compareStudents);
+}

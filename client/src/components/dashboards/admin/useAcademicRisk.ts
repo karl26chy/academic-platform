@@ -101,6 +101,7 @@ export function useAcademicRisk() {
         return {
           studentId: st.id,
           nombre: `${st.nombre} ${st.apellido}`.trim(),
+          apellido: st.apellido,
           gradeId: grade?.id ?? null,
           gradeNombre: grade ? gradeLabel(grade) : 'Sin asignar',
           promedio: rep.summary.promedioGeneralDefinitivo,

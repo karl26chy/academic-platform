@@ -125,3 +125,26 @@ describe('countActiveFilters / hasActiveFilters', () => {
   });
 });
 
+describe('applyStudentFilters — orden alfabético', () => {
+  test('15) el resultado siempre queda ordenado por apellido ASC', () => {
+    // Estudiantes con apellidos desordenados
+    const desordenados = [
+      u({ id: 'z', nombre: 'Zoe', apellido: 'Rodríguez', genero: 'femenino', fecha_nacimiento: '2010-06-01' }),
+      u({ id: 'a', nombre: 'Ana', apellido: 'Álvarez', genero: 'femenino', fecha_nacimiento: '2010-06-01' }),
+      u({ id: 'g', nombre: 'Pedro', apellido: 'García', genero: 'masculino', fecha_nacimiento: '2010-06-01' }),
+    ];
+    const result = applyStudentFilters(desordenados, [], EMPTY_FILTERS);
+    assert.deepEqual(result.map(x => x.apellido), ['Álvarez', 'García', 'Rodríguez']);
+  });
+
+  test('16) tras filtrar por género, el resultado permanece ordenado', () => {
+    const desordenados = [
+      u({ id: 'z', nombre: 'Zoe', apellido: 'Rodríguez', genero: 'femenino', fecha_nacimiento: '2010-06-01' }),
+      u({ id: 'a', nombre: 'Ana', apellido: 'Álvarez', genero: 'femenino', fecha_nacimiento: '2010-06-01' }),
+      u({ id: 'g', nombre: 'Pedro', apellido: 'García', genero: 'masculino', fecha_nacimiento: '2010-06-01' }),
+    ];
+    const f: StudentFilters = { ...EMPTY_FILTERS, genero: 'femenino' };
+    const result = applyStudentFilters(desordenados, [], f);
+    assert.deepEqual(result.map(x => x.apellido), ['Álvarez', 'Rodríguez']);
+  });
+});

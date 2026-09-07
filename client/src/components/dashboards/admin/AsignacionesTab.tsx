@@ -6,7 +6,7 @@ import { ConfirmDeleteModal } from '../super-admin/ConfirmDeleteModal';
 import { EditAssignmentModal } from '../super-admin/EditAssignmentModal';
 import { EditStudentGradeModal } from '../super-admin/EditStudentGradeModal';
 import { useApp } from '../../../context/useApp';
-import { fullName, gradeLabel } from '../../../lib/people';
+import { compareStudents, fullName, gradeLabel, sortStudents } from '../../../lib/people';
 import type { Assignment, StudentGrade } from '../../../types';
 
 /** Asignaciones (docente + materia + grado) y matrículas de la institución del admin. */
@@ -28,13 +28,19 @@ export const AsignacionesTab: React.FC = () => {
   const instId = user?.institucion_id;
 
   const misDocentes = users.filter(u => u.rol === 'teacher' && u.institucion_id === instId);
-  const misEstudiantes = users.filter(
-    u => u.rol === 'student' && u.institucion_id === instId && !studentGrades.some(sg => sg.estudiante_id === u.id)
-  );
+  const misEstudiantesInst = sortStudents(users.filter(u => u.rol === 'student' && u.institucion_id === instId));
+  const misEstudiantes = misEstudiantesInst.filter(u => !studentGrades.some(sg => sg.estudiante_id === u.id));
   const misMaterias = subjects.filter(s => s.institucion_id === instId);
   const misGrados = grades.filter(g => g.institucion_id === instId);
   const misAsignaciones = assignments.filter(a => a.institucion_id === instId);
-  const misMatriculas = studentGrades.filter(sg => misEstudiantes.some(s => s.id === sg.estudiante_id));
+  const misMatriculas = studentGrades
+    .filter(sg => misEstudiantesInst.some(s => s.id === sg.estudiante_id))
+    .sort((a, b) => {
+      const stA = users.find(u => u.id === a.estudiante_id);
+      const stB = users.find(u => u.id === b.estudiante_id);
+      if (stA && stB) return compareStudents(stA, stB);
+      return 0;
+    });
 
   const teacherName = (id: string) => fullName(users.find(u => u.id === id));
   const studentName = (id: string) => fullName(users.find(u => u.id === id));

@@ -7,6 +7,7 @@ import { EditAssignmentModal } from './EditAssignmentModal';
 import { EditStudentGradeModal } from './EditStudentGradeModal';
 import type { Assignment, Grade, Institution, StudentGrade, Subject, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
+import { compareStudents, sortStudents } from '../../../lib/people';
 
 interface AssignmentsTabProps {
   institutions: Institution[];
@@ -222,13 +223,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
             <Field label="Estudiante">
               <select required value={studentId} onChange={e => setStudentId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
-                {users
+                {sortStudents(users
                   .filter(
                     u =>
                       u.rol === 'student' &&
                       u.institucion_id === studInstId &&
                       !studentGrades.some(sg => sg.estudiante_id === u.id)
-                  )
+                  ))
                   .map(s => <option key={s.id} value={s.id}>{s.nombre} {s.apellido}</option>)}
               </select>
             </Field>
@@ -255,6 +256,12 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
               .filter(sg =>
                 users.some(u => u.rol === 'student' && u.institucion_id === studInstId && u.id === sg.estudiante_id)
               )
+              .sort((a, b) => {
+                const stA = users.find(u => u.id === a.estudiante_id);
+                const stB = users.find(u => u.id === b.estudiante_id);
+                if (stA && stB) return compareStudents(stA, stB);
+                return 0;
+              })
               .map(sg => (
                 <div key={sg.id} className="flex flex-wrap justify-between items-center gap-2 p-3 bg-white rounded-xl border border-gray-200 text-xs">
                   <span className="font-semibold text-gray-900 min-w-0 truncate">{getUserLabel(sg.estudiante_id)}</span>

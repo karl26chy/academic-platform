@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../../context/useApp';
 import { api } from '../../../services/api';
-import { fullName, gradeLabel } from '../../../lib/people';
+import { fullName, gradeLabel, sortStudents } from '../../../lib/people';
 import { maxScoreFor } from '../../../lib/grades';
 import type { AcademicPeriod } from '../../../types';
 
@@ -23,7 +23,7 @@ export function useTeacherClass(selectedAssignId: string) {
   const enrolledStudentIds = activeGrade
     ? studentGrades.filter(sg => sg.grado_id === activeGrade.id).map(sg => sg.estudiante_id)
     : [];
-  const gradeStudents = users.filter(u => enrolledStudentIds.includes(u.id) && u.activo);
+  const gradeStudents = sortStudents(users.filter(u => enrolledStudentIds.includes(u.id) && u.activo));
 
   const getSubjectName = (subjId: string) => subjects.find(s => s.id === subjId)?.nombre || 'Materia';
   const getGradeName = (gradeId: string) => gradeLabel(grades.find(g => g.id === gradeId)) || 'Grado';

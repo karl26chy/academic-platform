@@ -8,6 +8,7 @@ import { DeleteUserModal } from './DeleteUserModal';
 import { UserDetailModal } from './UserDetailModal';
 import type { Institution, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
+import { compareStudents } from '../../../lib/people';
 
 const ROL_BADGE: Record<string, string> = {
   admin: 'bg-amber-100 text-amber-500',
@@ -37,7 +38,15 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const rememberPassword = (userId: string, password: string) =>
     setUserPasswords(prev => ({ ...prev, [userId]: password }));
 
-  const instUsers = users.filter(u => u.institucion_id === selectedInstId);
+  const instUsers = users.filter(u => u.institucion_id === selectedInstId)
+    .sort((a, b) => {
+      // Students sorted by apellido → nombre → id; non-students keep natural order at end.
+      const aIsStudent = a.rol === 'student' ? 0 : 1;
+      const bIsStudent = b.rol === 'student' ? 0 : 1;
+      if (aIsStudent !== bIsStudent) return aIsStudent - bIsStudent;
+      if (a.rol === 'student' && b.rol === 'student') return compareStudents(a, b);
+      return 0;
+    });
 
   const toggleUserActive = async (target: User) => {
     try {

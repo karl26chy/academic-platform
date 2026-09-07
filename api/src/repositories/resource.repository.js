@@ -9,8 +9,11 @@ import { quote, selectColumns, sanitizeRow } from './registry.js';
 
 export async function list(resource, scope) {
   const where = scope.where ? `WHERE ${scope.where}` : '';
+  const orderBy = resource === 'users'
+    ? 'ORDER BY LOWER("apellido") ASC, LOWER("nombre") ASC, id ASC'
+    : 'ORDER BY id';
   const { rows } = await pool.query(
-    `SELECT ${selectColumns(resource)} FROM ${quote(resource)} ${where} ORDER BY id`,
+    `SELECT ${selectColumns(resource)} FROM ${quote(resource)} ${where} ${orderBy}`,
     scope.params
   );
   return rows;

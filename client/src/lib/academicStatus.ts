@@ -1,5 +1,7 @@
 import type { AcademicPeriod } from '../types';
 
+const collator = new Intl.Collator('es', { sensitivity: 'base' });
+
 /**
  * Clasificación académica del resumen institucional (admin).
  *
@@ -17,6 +19,8 @@ import type { AcademicPeriod } from '../types';
 export interface AcademicStatus {
   studentId: string;
   nombre: string;
+  /** Apellido del estudiante; usado para desempate por orden alfabético. */
+  apellido?: string;
   gradeId: string | null;
   gradeNombre: string;
   /** Promedio acumulado del año (promedioGeneralDefinitivo); null = sin datos. */
@@ -66,13 +70,17 @@ export function groupByGrade<T extends Pick<AcademicStatus, 'gradeId' | 'gradeNo
 
 /**
  * Comparador de estudiantes por promedio con desempate DETERMINÍSTICO
- * (promedio, luego nombre, luego id) para que el orden no cambie entre renders.
+ * (promedio, luego apellido, luego nombre, luego id) para que el orden no
+ * cambie entre renders.
  */
 function compareByPromedio(a: AcademicStatus, b: AcademicStatus): number {
   const pa = a.promedio ?? 0;
   const pb = b.promedio ?? 0;
   if (pa !== pb) return pa - pb;
-  if (a.nombre !== b.nombre) return a.nombre.localeCompare(b.nombre, 'es');
+  const byApellido = collator.compare(a.apellido ?? '', b.apellido ?? '');
+  if (byApellido !== 0) return byApellido;
+  const byNombre = collator.compare(a.nombre, b.nombre);
+  if (byNombre !== 0) return byNombre;
   return (a.studentId ?? '').localeCompare(b.studentId ?? '');
 }
 

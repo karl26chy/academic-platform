@@ -1,5 +1,5 @@
 import type { StudentGrade, User } from '../types';
-import { getAge } from './people.ts';
+import { getAge, sortStudents } from './people.ts';
 
 /**
  * Filtros de la sección "Estudiantes" del panel de ADMIN.
@@ -46,7 +46,7 @@ export function applyStudentFilters(
   studentGrades: StudentGrade[],
   filters: StudentFilters
 ): User[] {
-  return students.filter(s => {
+  const filtered = students.filter(s => {
     if (filters.genero && s.genero !== filters.genero) return false;
 
     const age = getAge(s.fecha_nacimiento);
@@ -60,4 +60,5 @@ export function applyStudentFilters(
 
     return true;
   });
+  return sortStudents(filtered);
 }

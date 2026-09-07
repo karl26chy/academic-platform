@@ -141,15 +141,15 @@ describe('selección POR CURSO: 3 peores y 3 mejores', () => {
     assert.deepEqual(peores, ['bajo', 'medio', 'alto']);
   });
 
-  test('8) empates: desempate determinístico por nombre/id y resultado estable', () => {
+  test('8) empates: desempate determinístico por apellido/nombre/id y resultado estable', () => {
     const curso = [
-      st({ studentId: 'x', nombre: 'Zoe', promedio: 3.0 }),
-      st({ studentId: 'y', nombre: 'Ana', promedio: 3.0 }),
-      st({ studentId: 'z', nombre: 'Luis', promedio: 3.0 }),
+      st({ studentId: 'x', nombre: 'Zoe', apellido: 'Rodríguez', promedio: 3.0 }),
+      st({ studentId: 'y', nombre: 'Ana', apellido: 'Álvarez', promedio: 3.0 }),
+      st({ studentId: 'z', nombre: 'Luis', apellido: 'García', promedio: 3.0 }),
     ];
-    const primero = selectWorstPerCourse(curso)[0].items.map(s => s.nombre);
-    const segundo = selectWorstPerCourse(curso)[0].items.map(s => s.nombre);
-    assert.deepEqual(primero, ['Ana', 'Luis', 'Zoe'], 'ordenado por nombre en caso de empate');
+    const primero = selectWorstPerCourse(curso)[0].items.map(s => s.apellido);
+    const segundo = selectWorstPerCourse(curso)[0].items.map(s => s.apellido);
+    assert.deepEqual(primero, ['Álvarez', 'García', 'Rodríguez'], 'ordenado por apellido en caso de empate');
     assert.deepEqual(primero, segundo, 'estable entre llamadas');
   });
 
