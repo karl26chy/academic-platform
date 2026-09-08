@@ -173,7 +173,6 @@ export const TeacherDashboard: React.FC = () => {
               subject={activeSubject}
               grade={activeGrade}
               students={gradeStudents}
-              evaluations={activeEvals}
               marks={marks}
               periods={periods}
               activePeriod={activePeriod}

@@ -8,14 +8,13 @@ import {
   getStudentAcademicStatus,
   academicStatusBadgeClass,
 } from '../../../lib/academicStatus';
-import type { Assignment, Evaluation, Grade, Mark, Subject, User, AcademicPeriod } from '../../../types';
+import type { Assignment, Grade, Mark, Subject, User, AcademicPeriod } from '../../../types';
 
 interface AcademicTrackingTabProps {
   assignment: Assignment;
   subject?: Subject | null;
   grade?: Grade | null;
   students: User[];
-  evaluations: Evaluation[];
   marks: Mark[];
   periods: AcademicPeriod[];
   activePeriod: AcademicPeriod | null;
@@ -28,7 +27,6 @@ export const AcademicTrackingTab: React.FC<AcademicTrackingTabProps> = ({
   subject,
   grade,
   students,
-  evaluations,
   marks,
   periods,
   activePeriod,
