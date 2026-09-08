@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus, Eye } from 'lucide-react';
-import { Card, EmptyMessage, StatCard, TableWrapper, TableHead, TableBody, Modal, ModalCloseButton } from '../../ui';
+import { EmptyMessage, Modal, ModalCloseButton } from '../../ui';
 import { studentFullName } from '../../../lib/people';
 import { weightedAverage } from '../../../lib/grades';
 import { periodLabel } from '../../../lib/periods';
 import {
   getStudentAcademicStatus,
-  academicStatusBadgeClass,
+  type AcademicTrackingStatus,
 } from '../../../lib/academicStatus';
 import type { Assignment, Grade, Mark, Subject, User, AcademicPeriod } from '../../../types';
 
@@ -22,6 +22,14 @@ interface AcademicTrackingTabProps {
   notaMinima: number;
 }
 
+const STATUS_FILTERS: Array<{ label: string; value: string }> = [
+  { label: 'Ver Todos', value: 'Todos' },
+  { label: 'Requiere Atención', value: 'Requiere atención' },
+  { label: 'En Seguimiento', value: 'En seguimiento' },
+  { label: 'Buen Rendimiento', value: 'Buen rendimiento' },
+  { label: 'Sin Notas', value: 'Sin notas' },
+];
+
 export const AcademicTrackingTab: React.FC<AcademicTrackingTabProps> = ({
   assignment,
   subject,
@@ -36,348 +44,248 @@ export const AcademicTrackingTab: React.FC<AcademicTrackingTabProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
 
-  // Períodos ordenados cronológicamente por año y número de período
-  const sortedPeriods = useMemo(() => {
-    return [...periods].sort((a, b) => a.anio - b.anio || a.numero - b.numero);
-  }, [periods]);
+  // Períodos ordenados cronológicamente
+  const sortedPeriods = useMemo(
+    () => [...periods].sort((a, b) => a.anio - b.anio || a.numero - b.numero),
+    [periods]
+  );
 
-  // Mapa de notas por estudiante en el período activo
+  // Datos por estudiante para el período activo
   const studentData = useMemo(() => {
     return students.map(student => {
-      // Filtrar notas de este estudiante para el grado y materia seleccionados
-      const studentMarksForSubject = marks.filter(
+      const allSubjectMarks = marks.filter(
         m =>
           m.estudiante_id === student.id &&
           m.materia_id === assignment.materia_id &&
           m.grado_id === assignment.grado_id
       );
 
-      // Notas del período activo
-      const activePeriodMarks = activePeriod
-        ? studentMarksForSubject.filter(
+      const periodMarks = activePeriod
+        ? allSubjectMarks.filter(
             m => m.periodo_id === activePeriod.id || m.periodo === activePeriod.nombre
           )
         : [];
 
-      const evalCount = activePeriodMarks.length;
       const promedio =
-        evalCount > 0
-          ? weightedAverage(activePeriodMarks.map(m => ({ nota: m.nota, porcentaje: m.porcentaje })))
+        periodMarks.length > 0
+          ? weightedAverage(periodMarks.map(m => ({ nota: m.nota, porcentaje: m.porcentaje })))
           : null;
-
-      const status = getStudentAcademicStatus(promedio, escalaMaxima, notaMinima);
 
       return {
         student,
-        activePeriodMarks,
-        evalCount,
+        periodMarks,
+        evalCount: periodMarks.length,
         promedio,
-        status,
-        studentMarksForSubject,
+        status: getStudentAcademicStatus(promedio, escalaMaxima, notaMinima),
+        allSubjectMarks,
       };
     });
   }, [students, marks, assignment, activePeriod, escalaMaxima, notaMinima]);
 
-  // Resumen general del grupo para el período activo
-  const summaryMetrics = useMemo(() => {
-    const totalStudents = students.length;
-    const studentsWithMarks = studentData.filter(s => s.promedio !== null);
+  // Lista filtrada
+  const filteredStudents = useMemo(
+    () =>
+      statusFilter === 'Todos'
+        ? studentData
+        : studentData.filter(s => s.status === statusFilter),
+    [studentData, statusFilter]
+  );
 
-    const groupAverage =
-      studentsWithMarks.length > 0
-        ? Number(
-            (
-              studentsWithMarks.reduce((acc, s) => acc + (s.promedio ?? 0), 0) /
-              studentsWithMarks.length
-            ).toFixed(2)
-          )
-        : null;
-
-    const requiringAttention = studentData.filter(s => s.status === 'Requiere atención').length;
-
-    return {
-      totalStudents,
-      groupAverage,
-      requiringAttention,
-    };
-  }, [students.length, studentData]);
-
-  // Filtrado de la lista según el filtro seleccionado
-  const filteredStudents = useMemo(() => {
-    if (statusFilter === 'Todos') return studentData;
-    return studentData.filter(s => s.status === statusFilter);
-  }, [studentData, statusFilter]);
-
-  // Cálculo del detalle del estudiante seleccionado
-  const selectedStudentDetails = useMemo(() => {
+  // Detalle del estudiante seleccionado
+  const selectedDetail = useMemo(() => {
     if (!selectedStudent) return null;
-
     const sData = studentData.find(s => s.student.id === selectedStudent.id);
     if (!sData) return null;
 
-    // Evolución por períodos
     const periodEvolution = sortedPeriods.map(p => {
-      const pMarks = sData.studentMarksForSubject.filter(
+      const pMarks = sData.allSubjectMarks.filter(
         m => m.periodo_id === p.id || m.periodo === p.nombre
       );
-      const pAvg =
-        pMarks.length > 0
-          ? weightedAverage(pMarks.map(m => ({ nota: m.nota, porcentaje: m.porcentaje })))
-          : null;
-
       return {
         period: p,
-        average: pAvg,
+        average:
+          pMarks.length > 0
+            ? weightedAverage(pMarks.map(m => ({ nota: m.nota, porcentaje: m.porcentaje })))
+            : null,
         evalCount: pMarks.length,
       };
     });
 
-    // Indicador de tendencia si hay período activo y período previo con notas
     let trend: 'Mejorando' | 'Estable' | 'Bajando' | null = null;
-
     if (activePeriod) {
-      const activeIdx = periodEvolution.findIndex(item => item.period.id === activePeriod.id);
+      const activeIdx = periodEvolution.findIndex(x => x.period.id === activePeriod.id);
       if (activeIdx > 0) {
-        const currentAvg = periodEvolution[activeIdx]?.average;
-        // Buscar el período previo más cercano que tenga notas
-        const prevItem = periodEvolution
-          .slice(0, activeIdx)
-          .reverse()
-          .find(item => item.average !== null);
-
-        if (currentAvg !== null && prevItem && prevItem.average !== null) {
-          if (currentAvg > prevItem.average) trend = 'Mejorando';
-          else if (currentAvg === prevItem.average) trend = 'Estable';
-          else trend = 'Bajando';
+        const cur = periodEvolution[activeIdx]?.average;
+        const prev = periodEvolution.slice(0, activeIdx).reverse().find(x => x.average !== null);
+        if (cur !== null && prev?.average !== null && prev?.average !== undefined) {
+          trend = cur > prev.average ? 'Mejorando' : cur === prev.average ? 'Estable' : 'Bajando';
         }
       }
     }
 
-    return {
-      ...sData,
-      periodEvolution,
-      trend,
-    };
+    return { ...sData, periodEvolution, trend };
   }, [selectedStudent, studentData, sortedPeriods, activePeriod]);
 
   if (!assignment) {
     return (
-      <Card className="p-6 text-center">
-        <EmptyMessage className="text-sm text-gray-500">
-          Selecciona una materia y grado para consultar el seguimiento académico.
-        </EmptyMessage>
-      </Card>
+      <div className="py-12 text-center text-sm text-gray-400">
+        Selecciona una materia y grado para consultar el seguimiento académico.
+      </div>
     );
   }
 
   if (students.length === 0) {
     return (
-      <Card className="p-6 text-center">
-        <EmptyMessage className="text-sm text-gray-500">
-          No hay estudiantes matriculados en {grade?.nombre || 'este grado'}.
-        </EmptyMessage>
-      </Card>
+      <div className="py-12 text-center text-sm text-gray-400">
+        No hay estudiantes matriculados en {grade?.nombre || 'este grado'}.
+      </div>
     );
   }
 
+  const periodDesc = activePeriod ? periodLabel(activePeriod) : 'Periodo Actual';
+  const subjectName = subject?.nombre ?? 'Materia';
+
   return (
-    <div className="space-y-6">
-      {/* Resumen del Grupo Compacto */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          label="Promedio del Grupo"
-          value={summaryMetrics.groupAverage !== null ? summaryMetrics.groupAverage.toFixed(2) : '—'}
-          valueClassName="text-q10-600"
-        />
-        <StatCard
-          label="Estudiantes"
-          value={summaryMetrics.totalStudents}
-          valueClassName="text-gray-900"
-        />
-        <StatCard
-          label="Requieren Atención"
-          value={summaryMetrics.requiringAttention}
-          valueClassName={summaryMetrics.requiringAttention > 0 ? 'text-red-600' : 'text-emerald-600'}
-        />
-      </div>
-
-      {/* Tabla con Filtro de Estado */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              Seguimiento Académico - {subject?.nombre} ({grade?.nombre})
-            </h3>
-            <p className="text-xs text-gray-500">
-              Desempeño del grupo en el período seleccionado. Escala máxima: {escalaMaxima}
-            </p>
-          </div>
-
-          {/* Filtro por estado */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-            {['Todos', 'Requiere atención', 'En seguimiento', 'Buen rendimiento', 'Sin notas'].map(
-              f => (
-                <button
-                  key={f}
-                  onClick={() => setStatusFilter(f)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statusFilter === f
-                      ? 'bg-white text-q10-600 shadow-xs border border-gray-200'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {f}
-                </button>
-              )
-            )}
-          </div>
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      {/* Cabecera */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
+        <div>
+          <h3 className="text-base font-bold text-gray-900">
+            {subjectName} — {periodDesc}
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Total: {students.length} estudiante{students.length !== 1 ? 's' : ''}
+          </p>
         </div>
 
-        {filteredStudents.length === 0 ? (
-          <EmptyMessage className="py-8 text-sm text-gray-500">
-            No se encontraron estudiantes con el estado "{statusFilter}".
-          </EmptyMessage>
-        ) : (
-          <TableWrapper>
-            <TableHead>
-              <tr>
-                <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Estudiante
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Promedio
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Evaluaciones
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Estado
-                </th>
-                <th className="py-3 px-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Acción
-                </th>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {filteredStudents.map(({ student, evalCount, promedio, status }) => (
-                <tr key={student.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                    {studentFullName(student)}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-bold text-center text-gray-900">
-                    {promedio !== null ? promedio.toFixed(2) : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-center text-gray-500">
-                    {evalCount} {evalCount === 1 ? 'registrada' : 'registradas'}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${academicStatusBadgeClass(
-                        status
-                      )}`}
-                    >
-                      {status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => setSelectedStudent(student)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-q10-600 bg-q10-50 hover:bg-q10-100 rounded-lg transition-colors"
-                    >
-                      <Eye className="h-3.5 w-3.5" /> Ver detalle
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </TableBody>
-          </TableWrapper>
-        )}
-      </Card>
+        {/* Filtros inline */}
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setStatusFilter(f.value)}
+              className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${
+                statusFilter === f.value
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Modal / Drawer de Detalle del Estudiante */}
-      {selectedStudent && selectedStudentDetails && (
+      {/* Tabla */}
+      {filteredStudents.length === 0 ? (
+        <EmptyMessage className="py-12 text-sm text-gray-400">
+          No hay estudiantes con el estado "{statusFilter}".
+        </EmptyMessage>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Estudiante
+              </th>
+              <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Promedio
+              </th>
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Evaluaciones Registradas
+              </th>
+              <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Estado
+              </th>
+              <th className="px-6 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Acción
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {filteredStudents.map(({ student, evalCount, promedio, status }) => (
+              <tr key={student.id} className="hover:bg-gray-50/60 transition-colors">
+                <td className="px-6 py-3.5 text-sm font-medium text-gray-800">
+                  {studentFullName(student)}
+                </td>
+                <td className="px-4 py-3.5 text-sm font-semibold text-right text-gray-900">
+                  {promedio !== null ? promedio.toFixed(2) : '—'}
+                </td>
+                <td className="px-4 py-3.5 text-sm text-center text-gray-500">
+                  {evalCount}
+                </td>
+                <td className="px-4 py-3.5 text-center">
+                  <StatusPill status={status} />
+                </td>
+                <td className="px-6 py-3.5 text-right">
+                  <button
+                    onClick={() => setSelectedStudent(student)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Ver detalle
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Modal de detalle */}
+      {selectedStudent && selectedDetail && (
         <Modal onClose={() => setSelectedStudent(null)} size="lg">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="flex items-start justify-between pb-4 border-b border-gray-100">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-base font-bold text-gray-900">
                 {studentFullName(selectedStudent)}
               </h3>
-              <p className="text-xs text-gray-500">
-                Detalle académico — {subject?.nombre} ({grade?.nombre})
+              <p className="text-xs text-gray-400 mt-0.5">
+                {subjectName}
               </p>
             </div>
             <ModalCloseButton onClose={() => setSelectedStudent(null)} />
           </div>
 
-          {/* Resumen del estudiante */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+          {/* Métricas del estudiante */}
+          <div className="flex flex-wrap gap-6 py-4 border-b border-gray-100">
             <div>
-              <span className="text-[11px] font-semibold text-gray-500 block uppercase">
-                Promedio Actual
-              </span>
-              <span className="text-xl font-bold text-gray-900">
-                {selectedStudentDetails.promedio !== null
-                  ? selectedStudentDetails.promedio.toFixed(2)
-                  : '—'}
-              </span>
+              <p className="text-[11px] font-semibold uppercase text-gray-400">Promedio actual</p>
+              <p className="text-2xl font-bold text-gray-900 mt-0.5">
+                {selectedDetail.promedio !== null ? selectedDetail.promedio.toFixed(2) : '—'}
+              </p>
             </div>
             <div>
-              <span className="text-[11px] font-semibold text-gray-500 block uppercase">
-                Estado Académico
-              </span>
-              <span
-                className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${academicStatusBadgeClass(
-                  selectedStudentDetails.status
-                )}`}
-              >
-                {selectedStudentDetails.status}
-              </span>
+              <p className="text-[11px] font-semibold uppercase text-gray-400">Estado</p>
+              <div className="mt-1">
+                <StatusPill status={selectedDetail.status} />
+              </div>
             </div>
-            <div className="col-span-2 sm:col-span-1">
-              <span className="text-[11px] font-semibold text-gray-500 block uppercase">
-                Tendencia
-              </span>
-              {selectedStudentDetails.trend ? (
-                <span
-                  className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold ${
-                    selectedStudentDetails.trend === 'Mejorando'
-                      ? 'text-emerald-700'
-                      : selectedStudentDetails.trend === 'Estable'
-                      ? 'text-blue-700'
-                      : 'text-red-700'
-                  }`}
-                >
-                  {selectedStudentDetails.trend === 'Mejorando' && <TrendingUp className="h-3.5 w-3.5" />}
-                  {selectedStudentDetails.trend === 'Estable' && <Minus className="h-3.5 w-3.5" />}
-                  {selectedStudentDetails.trend === 'Bajando' && <TrendingDown className="h-3.5 w-3.5" />}
-                  {selectedStudentDetails.trend}
-                </span>
-              ) : (
-                <span className="text-xs text-gray-500 mt-1 block">Sin datos suficientes</span>
-              )}
+            <div>
+              <p className="text-[11px] font-semibold uppercase text-gray-400">Tendencia</p>
+              <TrendBadge trend={selectedDetail.trend} />
             </div>
           </div>
 
-          {/* Evaluaciones del período activo */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-              Evaluaciones en el período seleccionado
-            </h4>
-
-            {selectedStudentDetails.activePeriodMarks.length === 0 ? (
-              <p className="text-xs text-gray-500 py-3 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
+          {/* Notas del período */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase text-gray-400 mb-3">
+              Notas del período seleccionado
+            </p>
+            {selectedDetail.periodMarks.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                 Sin notas registradas en este período.
               </p>
             ) : (
-              <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
-                {selectedStudentDetails.activePeriodMarks.map(m => (
-                  <div key={m.id} className="p-3 flex items-center justify-between bg-white text-xs">
+              <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                {selectedDetail.periodMarks.map(m => (
+                  <div key={m.id} className="flex items-center justify-between px-4 py-2.5 bg-white text-xs">
                     <div>
-                      <span className="font-semibold text-gray-900 block">
+                      <span className="font-semibold text-gray-800 block">
                         {m.tipo_evaluacion || 'Evaluación'}
                       </span>
                       {m.fecha_evaluacion && (
-                        <span className="text-gray-500 text-[11px]">{m.fecha_evaluacion}</span>
+                        <span className="text-gray-400 text-[11px]">{m.fecha_evaluacion}</span>
                       )}
                     </div>
                     <div className="text-right">
@@ -385,7 +293,7 @@ export const AcademicTrackingTab: React.FC<AcademicTrackingTabProps> = ({
                         {Number(m.nota).toFixed(1)} / {escalaMaxima}
                       </span>
                       {m.porcentaje > 0 && (
-                        <span className="text-gray-500 text-[11px]">{m.porcentaje}% del período</span>
+                        <span className="text-gray-400 text-[11px]">{m.porcentaje}%</span>
                       )}
                     </div>
                   </div>
@@ -395,37 +303,78 @@ export const AcademicTrackingTab: React.FC<AcademicTrackingTabProps> = ({
           </div>
 
           {/* Evolución por períodos */}
-          <div className="space-y-2 pt-2 border-t border-gray-100">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-              Evolución por períodos ({subject?.nombre})
-            </h4>
-
-            {selectedStudentDetails.periodEvolution.length === 0 ? (
-              <p className="text-xs text-gray-500 py-2">No hay información de períodos disponible.</p>
-            ) : (
+          {selectedDetail.periodEvolution.some(x => x.average !== null) && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase text-gray-400 mb-3">
+                Evolución por períodos
+              </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {selectedStudentDetails.periodEvolution.map(({ period, average }) => (
+                {selectedDetail.periodEvolution.map(({ period, average }) => (
                   <div
                     key={period.id}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                    className={`px-3 py-2.5 rounded-xl border text-center ${
                       activePeriod?.id === period.id
-                        ? 'bg-q10-50 border-q10-300'
-                        : 'bg-gray-50 border-gray-200'
+                        ? 'bg-gray-900 border-gray-900 text-white'
+                        : 'bg-gray-50 border-gray-100 text-gray-700'
                     }`}
                   >
-                    <span className="text-[11px] font-semibold text-gray-500 block truncate">
+                    <span
+                      className={`text-[11px] font-semibold block truncate ${
+                        activePeriod?.id === period.id ? 'text-gray-300' : 'text-gray-400'
+                      }`}
+                    >
                       {periodLabel(period)}
                     </span>
-                    <span className="text-sm font-bold text-gray-900 block mt-0.5">
-                      {average !== null ? average.toFixed(2) : 'Sin notas'}
+                    <span className="text-sm font-bold block mt-0.5">
+                      {average !== null ? average.toFixed(2) : '—'}
                     </span>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </Modal>
       )}
     </div>
+  );
+};
+
+// ── Componentes auxiliares ──────────────────────────────────────────────────
+
+const PILL_CLASSES: Record<AcademicTrackingStatus, string> = {
+  'Buen rendimiento': 'bg-emerald-100 text-emerald-700',
+  'En seguimiento': 'bg-amber-100 text-amber-700',
+  'Requiere atención': 'bg-red-100 text-red-600',
+  'Sin notas': 'bg-gray-100 text-gray-500',
+};
+
+const PILL_LABELS: Record<AcademicTrackingStatus, string> = {
+  'Buen rendimiento': 'Buen Rendimiento',
+  'En seguimiento': 'En Seguimiento',
+  'Requiere atención': 'Requiere Atención',
+  'Sin notas': 'Sin Notas',
+};
+
+const StatusPill: React.FC<{ status: AcademicTrackingStatus }> = ({ status }) => (
+  <span
+    className={`inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold ${PILL_CLASSES[status]}`}
+  >
+    {PILL_LABELS[status]}
+  </span>
+);
+
+const TrendBadge: React.FC<{
+  trend: 'Mejorando' | 'Estable' | 'Bajando' | null;
+}> = ({ trend }) => {
+  if (!trend) return <span className="text-xs text-gray-400 mt-1 block">Sin datos</span>;
+  const cfg = {
+    Mejorando: { icon: <TrendingUp className="h-3.5 w-3.5" />, cls: 'text-emerald-700' },
+    Estable: { icon: <Minus className="h-3.5 w-3.5" />, cls: 'text-blue-600' },
+    Bajando: { icon: <TrendingDown className="h-3.5 w-3.5" />, cls: 'text-red-600' },
+  }[trend];
+  return (
+    <span className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold ${cfg.cls}`}>
+      {cfg.icon} {trend}
+    </span>
   );
 };

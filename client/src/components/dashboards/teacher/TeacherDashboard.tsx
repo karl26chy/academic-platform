@@ -52,12 +52,12 @@ export const TeacherDashboard: React.FC = () => {
   const tabs: TabItem<TeacherTab>[] = [
     { id: 'attendance', label: 'Asistencia', icon: <CheckSquare className="h-4 w-4" /> },
     { id: 'marks', label: 'Notas', icon: <Award className="h-4 w-4" /> },
+    { id: 'evaluations', label: 'Evaluaciones', icon: <ClipboardList className="h-4 w-4" /> },
+    { id: 'academicTracking', label: 'Seguimiento académico', icon: <BarChart2 className="h-4 w-4" /> },
     { id: 'achievements', label: 'Logros', icon: <Star className="h-4 w-4" /> },
     { id: 'observations', label: 'Observaciones', icon: <MessageSquare className="h-4 w-4" /> },
     { id: 'citations', label: 'Citaciones', icon: <AlertTriangle className="h-4 w-4" /> },
     { id: 'messages', label: 'Mensajería', icon: <Mail className="h-4 w-4" />, badge: messaging.unreadIncoming },
-    { id: 'evaluations', label: 'Evaluaciones', icon: <ClipboardList className="h-4 w-4" /> },
-    { id: 'academicTracking', label: 'Seguimiento académico', icon: <BarChart2 className="h-4 w-4" /> },
   ];
 
   return (
