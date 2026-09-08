@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, AlertTriangle, CheckSquare, ClipboardList, Lock, Mail, Star, MessageSquare } from 'lucide-react';
+import { Award, AlertTriangle, CheckSquare, ClipboardList, Lock, Mail, Star, MessageSquare, BarChart2 } from 'lucide-react';
 import { useApp } from '../../../context/useApp';
 import { useMessaging } from '../../../hooks/useMessaging';
 import { Card, EmptyMessage, Field, INPUT, Tabs, type TabItem } from '../../ui';
@@ -13,8 +13,17 @@ import { MarksTab } from './MarksTab';
 import { CitationsTab } from './CitationsTab';
 import { LogrosTab } from './LogrosTab';
 import { ObservacionesTab } from './ObservacionesTab';
+import { AcademicTrackingTab } from './AcademicTrackingTab';
 
-type TeacherTab = 'attendance' | 'evaluations' | 'marks' | 'achievements' | 'observations' | 'citations' | 'messages';
+type TeacherTab =
+  | 'attendance'
+  | 'marks'
+  | 'achievements'
+  | 'observations'
+  | 'citations'
+  | 'messages'
+  | 'evaluations'
+  | 'academicTracking';
 
 export const TeacherDashboard: React.FC = () => {
   const { refreshData, navigateToTab, setNavigateToTab } = useApp();
@@ -22,7 +31,7 @@ export const TeacherDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TeacherTab>('attendance');
 
   const {
-    user, teacherAssignments, activeAssignment, activeGrade, activeSubject,
+    user, currentInstitution, teacherAssignments, activeAssignment, activeGrade, activeSubject,
     gradeStudents, activeEvals, marks, notaMax,
     periods, selectedPeriodId, activePeriod, selectPeriod,
     getSubjectName, getGradeName, getStudentName,
@@ -42,12 +51,13 @@ export const TeacherDashboard: React.FC = () => {
 
   const tabs: TabItem<TeacherTab>[] = [
     { id: 'attendance', label: 'Asistencia', icon: <CheckSquare className="h-4 w-4" /> },
-    { id: 'evaluations', label: 'Evaluaciones', icon: <ClipboardList className="h-4 w-4" /> },
     { id: 'marks', label: 'Notas', icon: <Award className="h-4 w-4" /> },
     { id: 'achievements', label: 'Logros', icon: <Star className="h-4 w-4" /> },
     { id: 'observations', label: 'Observaciones', icon: <MessageSquare className="h-4 w-4" /> },
     { id: 'citations', label: 'Citaciones', icon: <AlertTriangle className="h-4 w-4" /> },
     { id: 'messages', label: 'Mensajería', icon: <Mail className="h-4 w-4" />, badge: messaging.unreadIncoming },
+    { id: 'evaluations', label: 'Evaluaciones', icon: <ClipboardList className="h-4 w-4" /> },
+    { id: 'academicTracking', label: 'Seguimiento académico', icon: <BarChart2 className="h-4 w-4" /> },
   ];
 
   return (
@@ -153,6 +163,22 @@ export const TeacherDashboard: React.FC = () => {
               teacherId={user.id}
               period={activePeriod}
               onSaved={refreshData}
+            />
+          )}
+
+          {activeTab === 'academicTracking' && (
+            <AcademicTrackingTab
+              key={`${activeAssignment.id}-${selectedPeriodId}`}
+              assignment={activeAssignment}
+              subject={activeSubject}
+              grade={activeGrade}
+              students={gradeStudents}
+              evaluations={activeEvals}
+              marks={marks}
+              periods={periods}
+              activePeriod={activePeriod}
+              escalaMaxima={currentInstitution?.escala_maxima ?? notaMax}
+              notaMinima={currentInstitution?.nota_minima_aprobacion ?? Math.round((currentInstitution?.escala_maxima ?? notaMax) * 0.6)}
             />
           )}
 

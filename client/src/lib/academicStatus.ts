@@ -122,3 +122,54 @@ export function selectBestPerCourse(
 ): GradeGroup<AcademicStatus>[] {
   return selectPerCourse(statuses, limit, (a, b) => compareByPromedio(b, a));
 }
+
+export type AcademicTrackingStatus =
+  | 'Buen rendimiento'
+  | 'En seguimiento'
+  | 'Requiere atención'
+  | 'Sin notas';
+
+/**
+ * Helper centralizado para determinar el estado académico de un estudiante
+ * respetando la escala de la institución (escala_maxima y nota_minima_aprobacion).
+ */
+export function getStudentAcademicStatus(
+  promedio: number | null | undefined,
+  escalaMaxima: number = 5,
+  notaMinima?: number
+): AcademicTrackingStatus {
+  if (promedio === null || promedio === undefined || !Number.isFinite(promedio)) {
+    return 'Sin notas';
+  }
+  const maxScale = Number(escalaMaxima) || 5;
+  const k = maxScale / 5;
+  const minPassing =
+    notaMinima !== undefined && Number.isFinite(notaMinima)
+      ? Number(notaMinima)
+      : 3.0 * k;
+  const highThreshold = Math.max(4.0 * k, minPassing + 0.5 * k);
+
+  if (promedio >= highThreshold) {
+    return 'Buen rendimiento';
+  }
+  if (promedio >= minPassing) {
+    return 'En seguimiento';
+  }
+  return 'Requiere atención';
+}
+
+/** Devuelve las clases CSS del badge correspondiente al estado académico. */
+export function academicStatusBadgeClass(status: AcademicTrackingStatus): string {
+  switch (status) {
+    case 'Buen rendimiento':
+      return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+    case 'En seguimiento':
+      return 'bg-amber-100 text-amber-700 border border-amber-200';
+    case 'Requiere atención':
+      return 'bg-red-100 text-red-700 border border-red-200';
+    case 'Sin notas':
+    default:
+      return 'bg-gray-100 text-gray-600 border border-gray-200';
+  }
+}
+

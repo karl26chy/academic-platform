@@ -5,6 +5,7 @@ import {
   groupByGrade,
   selectBestPerCourse,
   selectWorstPerCourse,
+  getStudentAcademicStatus,
   type AcademicStatus,
 } from './academicStatus.ts';
 import type { AcademicPeriod } from '../types';
@@ -187,3 +188,25 @@ describe('groupByGrade', () => {
     assert.equal(grupos[0].items.length, 2);
   });
 });
+
+describe('getStudentAcademicStatus', () => {
+  test('clasifica promedios en escala de 1 a 5', () => {
+    assert.equal(getStudentAcademicStatus(null, 5), 'Sin notas');
+    assert.equal(getStudentAcademicStatus(undefined, 5), 'Sin notas');
+    assert.equal(getStudentAcademicStatus(4.5, 5), 'Buen rendimiento');
+    assert.equal(getStudentAcademicStatus(3.5, 5), 'En seguimiento');
+    assert.equal(getStudentAcademicStatus(2.5, 5), 'Requiere atención');
+  });
+
+  test('clasifica promedios en escala de 1 a 10', () => {
+    assert.equal(getStudentAcademicStatus(8.5, 10), 'Buen rendimiento');
+    assert.equal(getStudentAcademicStatus(6.5, 10), 'En seguimiento');
+    assert.equal(getStudentAcademicStatus(4.0, 10), 'Requiere atención');
+  });
+
+  test('respeta nota minima de aprobacion personalizada', () => {
+    assert.equal(getStudentAcademicStatus(3.2, 5, 3.5), 'Requiere atención');
+    assert.equal(getStudentAcademicStatus(3.6, 5, 3.5), 'En seguimiento');
+  });
+});
+
