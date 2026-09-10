@@ -148,6 +148,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
             apellido: '',
             email: '',
             rol: 'student' as const,
+            institucion_id: null,
             activo: true,
           };
 
