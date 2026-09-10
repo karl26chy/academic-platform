@@ -100,6 +100,8 @@ export const api = {
   // Attendance
   getAttendance: attendance.list,
   createAttendance: attendance.create,
+  updateAttendance: attendance.update,
+  patchAttendance: attendance.patch,
 
   // Marks
   getMarks: marks.list,

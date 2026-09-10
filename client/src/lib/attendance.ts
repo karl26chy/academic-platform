@@ -7,6 +7,35 @@ import type { Attendance } from '../types';
  * antigua "tardanza" ya no existe).
  */
 
+export type Estado = 'presente' | 'ausente' | 'justificada';
+
+export const ESTADOS: { value: Estado; label: string }[] = [
+  { value: 'presente', label: 'Presente' },
+  { value: 'ausente', label: 'Ausente' },
+  { value: 'justificada', label: 'Inasistencia justificada' },
+];
+
+/** Formato YYYY-MM-DD local sin desfase UTC. */
+export function getLocalTodayString(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Filtra los registros de asistencia correspondientes a una clase y fecha. */
+export function filterAttendanceByDateAndClass(
+  records: Attendance[],
+  materiaId: string,
+  gradoId: string,
+  fecha: string,
+): Attendance[] {
+  return records.filter(
+    a => a.materia_id === materiaId && a.grado_id === gradoId && a.fecha === fecha
+  );
+}
+
 export interface AttendanceCounts {
   presente: number;
   ausente: number;
