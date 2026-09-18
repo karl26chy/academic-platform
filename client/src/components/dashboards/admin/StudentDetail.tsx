@@ -116,7 +116,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AttendanceBox
           icon={<CheckCircle className="h-5 w-5 text-emerald-600 mx-auto mb-1" />}
-          value={`${attendanceRate}%`} label="Asistencia"
+          value={counts.presente} label="Asistencia"
           className="bg-emerald-50 border-emerald-200" textClass="text-emerald-600"
         />
         <AttendanceBox
