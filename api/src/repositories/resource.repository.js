@@ -68,6 +68,40 @@ export async function update(resource, id, data) {
   return sanitizeRow(resource, rows[0]);
 }
 
+/**
+ * Upsert de asistencia: inserta o actualiza basándose en el constraint único
+ * (estudiante_id, materia_id, grado_id, fecha). Si existe un registro previo
+ * para esa combinación, actualiza estado y registrado_por manteniendo el id
+ * original. Devuelve siempre el registro resultante sanitizado.
+ */
+export async function upsertAttendance(data) {
+  if (!data.id) data.id = generateId();
+
+  const { rows } = await pool.query(
+    `INSERT INTO attendance
+       ("id", "estudiante_id", "materia_id", "grado_id", "fecha", "estado", "periodo_id", "registrado_por")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT ("estudiante_id", "materia_id", "grado_id", "fecha")
+     DO UPDATE SET
+       "estado"        = EXCLUDED."estado",
+       "registrado_por" = EXCLUDED."registrado_por"
+     RETURNING *`,
+    [
+      data.id,
+      data.estudiante_id,
+      data.materia_id,
+      data.grado_id,
+      data.fecha,
+      data.estado,
+      data.periodo_id ?? null,
+      data.registrado_por ?? null,
+    ]
+  );
+  return sanitizeRow('attendance', rows[0]);
+}
+
+
+
 export async function remove(resource, id) {
   const { rows } = await pool.query(
     `DELETE FROM ${quote(resource)} WHERE id = $1 RETURNING *`,

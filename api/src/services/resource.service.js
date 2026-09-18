@@ -55,9 +55,17 @@ export async function create(resource, body, user) {
     if (data.activo === true) return repo.insertOpenPeriod(data);
   }
 
+  if (resource === 'attendance') {
+    // Upsert: si ya existe un registro para la misma combinación
+    // (estudiante, materia, grado, fecha) se actualiza el estado en lugar
+    // de crear un duplicado. Esto es coherente con el UNIQUE constraint de la DB.
+    return repo.upsertAttendance(data);
+  }
+
   const row = await repo.insert(resource, data);
   return row;
 }
+
 
 export async function replace(resource, id, body, user) {
   const existing = await repo.findRaw(resource, id);

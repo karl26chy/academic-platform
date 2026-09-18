@@ -86,11 +86,11 @@ export default async function attendanceSuite(world) {
     const p1 = (await mkPeriod('Primer periodo', 1, true)).data;
     track(world, 'academic_periods', p1.id);
 
-    const explicita = (await post('/attendance', baseAtt({ periodo_id: p1.id }), teacherCtok)).data;
+    const explicita = (await post('/attendance', baseAtt({ fecha: '2026-02-01', periodo_id: p1.id }), teacherCtok)).data;
     track(world, 'attendance', explicita.id);
     equal(explicita.periodo_id, p1.id, 'queda asociada al periodo indicado');
 
-    const automatica = (await post('/attendance', baseAtt(), teacherCtok)).data;
+    const automatica = (await post('/attendance', baseAtt({ fecha: '2026-02-02' }), teacherCtok)).data;
     track(world, 'attendance', automatica.id);
     equal(automatica.periodo_id, p1.id, 'sin periodo_id se autoasigna el único abierto');
   });
@@ -225,9 +225,9 @@ export default async function attendanceSuite(world) {
     const p1 = (await mkPeriod('Primer periodo', 1, true)).data;
     track(world, 'academic_periods', p1.id);
 
-    const att1 = (await post('/attendance', baseAtt({ fecha: '2026-02-01', periodo_id: p1.id }), teacherCtok)).data;
+    const att1 = (await post('/attendance', baseAtt({ fecha: '2026-02-20', periodo_id: p1.id }), teacherCtok)).data;
     track(world, 'attendance', att1.id);
-    const att2 = (await post('/attendance', baseAtt({ fecha: '2026-02-05', periodo_id: p1.id }), teacherCtok)).data;
+    const att2 = (await post('/attendance', baseAtt({ fecha: '2026-02-21', periodo_id: p1.id }), teacherCtok)).data;
     track(world, 'attendance', att2.id);
 
     // Cierra P1 y abre P2 (abrir cierra los demás automáticamente).

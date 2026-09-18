@@ -427,9 +427,9 @@ export default async function reportsSuite(world) {
       estudiante_id: ctx.student.id, materia_id: ctx.subject.id, grado_id: ctx.grade.id,
       fecha: '2026-02-10', periodo_id: ctx.period.id, registrado_por: ctx.teacher.id,
     };
-    await post('/attendance', { ...baseAtt, estado: 'ausente' }, su).then(r => track(world, 'attendance', r.data.id));
-    await post('/attendance', { ...baseAtt, estado: 'justificada' }, su).then(r => track(world, 'attendance', r.data.id));
-    await post('/attendance', { ...baseAtt, estado: 'justificada' }, su).then(r => track(world, 'attendance', r.data.id));
+    await post('/attendance', { ...baseAtt, fecha: '2026-02-10', estado: 'ausente' }, su).then(r => track(world, 'attendance', r.data.id));
+    await post('/attendance', { ...baseAtt, fecha: '2026-02-11', estado: 'justificada' }, su).then(r => track(world, 'attendance', r.data.id));
+    await post('/attendance', { ...baseAtt, fecha: '2026-02-12', estado: 'justificada' }, su).then(r => track(world, 'attendance', r.data.id));
 
     const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     equal(res.subjects[0].porPeriodo[0].fallas, 1, '1 falla');

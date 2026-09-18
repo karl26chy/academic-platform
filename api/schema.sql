@@ -179,6 +179,25 @@ ALTER TABLE institutions
 ALTER TABLE attendance ADD COLUMN IF NOT EXISTS periodo_id TEXT;
 CREATE INDEX IF NOT EXISTS idx_attendance_periodo ON attendance(periodo_id);
 
+-- Migración idempotente: unicidad de asistencia por estudiante+materia+grado+fecha.
+-- Paso 1: eliminar duplicados conservando el registro con el id mayor (el más reciente).
+DELETE FROM attendance
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           ROW_NUMBER() OVER (
+             PARTITION BY "estudiante_id", "materia_id", "grado_id", "fecha"
+             ORDER BY id DESC
+           ) AS rn
+    FROM attendance
+  ) ranked
+  WHERE rn > 1
+);
+-- Paso 2: crear el índice único (idempotente).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_attendance_student_class_date
+  ON attendance ("estudiante_id", "materia_id", "grado_id", "fecha");
+
+
 -- Migración idempotente: el correo deja de ser obligatorio (sigue siendo único).
 ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
 
