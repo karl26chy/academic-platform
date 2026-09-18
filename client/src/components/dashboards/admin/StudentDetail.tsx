@@ -29,7 +29,7 @@ interface StudentDetailProps {
 /** Ficha completa del estudiante: datos, asistencia, gráfica y notas. */
 export const StudentDetail: React.FC<StudentDetailProps> = ({
   student, institution, subjects, marks, attendance, gradeLabel,
-  average, attendanceRate, getSubjectName, onGenerateReport,
+  average, getSubjectName, onGenerateReport,
 }) => {
   const studentMarks = useMemo(
     () => marks.filter(m => m.estudiante_id === student.id),
