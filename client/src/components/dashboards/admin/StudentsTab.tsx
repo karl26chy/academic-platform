@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Edit3, Eye, FileText, Filter, Search, UserPlus, X } from 'lucide-react';
+import { Archive, ChevronDown, ChevronUp, Edit3, Eye, FileText, Filter, Search, UserPlus, X } from 'lucide-react';
 import { Card, EmptyMessage, Field, INPUT, toast } from '../../ui';
 import { useClickOutside } from '../../../hooks/useClickOutside';
 import { getAge, studentFullName } from '../../../lib/people';
@@ -8,6 +8,7 @@ import { applyStudentFilters, countActiveFilters } from '../../../lib/studentFil
 import { StudentDetail } from './StudentDetail';
 import { StudentFormModal } from './StudentFormModal';
 import { BoletinModal } from './BoletinModal';
+import { BoletinMasivoModal } from './BoletinMasivoModal';
 import type { Attendance, Grade, Institution, Mark, StudentGrade, Subject, User } from '../../../types';
 
 interface StudentsTabProps {
@@ -43,6 +44,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   const showMsg = (type: 'success' | 'error', text: string) => (type === 'success' ? toast.success(text) : toast.error(text));
   const [formMode, setFormMode] = useState<'new' | User | null>(null);
   const [reportStudent, setReportStudent] = useState<User | null>(null);
+  const [boletinMasivoOpen, setBoletinMasivoOpen] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const closeAutocomplete = useCallback(() => setShowAutocomplete(false), []);
@@ -153,6 +155,17 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
             ) : (
               <ChevronDown className="h-4 w-4 text-gray-400" />
             )}
+          </button>
+
+          {/* Generación masiva de boletines por grado */}
+          <button
+            id="btn-generar-boletines-masivo"
+            type="button"
+            onClick={() => setBoletinMasivoOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-q10-200 bg-q10-50 text-sm font-semibold text-q10-700 hover:bg-q10-100 transition-colors"
+          >
+            <Archive className="h-4 w-4 text-q10-600" />
+            Generar boletines
           </button>
         </div>
 
@@ -287,6 +300,13 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
 
       {reportStudent && (
         <BoletinModal student={reportStudent} onClose={() => setReportStudent(null)} />
+      )}
+
+      {boletinMasivoOpen && (
+        <BoletinMasivoModal
+          grades={grades}
+          onClose={() => setBoletinMasivoOpen(false)}
+        />
       )}
     </div>
   );

@@ -129,3 +129,39 @@ export async function attendanceCountsBySubject(studentId, periodId) {
   }
   return map;
 }
+
+/**
+ * Estudiantes matriculados en un grado, validando que el grado pertenezca a la
+ * institución del admin (aislamiento multi-tenant).
+ *
+ * Devuelve null si el grado no existe o no pertenece a la institución.
+ * Devuelve [] si el grado existe pero no tiene estudiantes matriculados.
+ */
+export async function studentsOfGrade(gradeId, institucionId) {
+  // Primero verificar que el grado existe y pertenece a la institución.
+  const { rows: gradeRows } = await pool.query(
+    `SELECT id FROM grades WHERE id = $1 AND institucion_id = $2`,
+    [gradeId, institucionId]
+  );
+  if (gradeRows.length === 0) return null;
+
+  const { rows } = await pool.query(
+    `SELECT u.id, u.nombre, u.apellido, u.identificacion, u.tipo_documento,
+            u.genero, u.fecha_nacimiento, u.institucion_id
+     FROM users u
+     INNER JOIN student_grades sg ON sg.estudiante_id = u.id
+     WHERE sg.grado_id = $1 AND u.institucion_id = $2
+     ORDER BY LOWER(u.apellido) ASC, LOWER(u.nombre) ASC, u.id ASC`,
+    [gradeId, institucionId]
+  );
+  return rows;
+}
+
+/** Datos básicos de un grado (nombre + tipo_grado) para el nombre del ZIP. */
+export async function gradeBasicInfo(gradeId) {
+  const { rows } = await pool.query(
+    `SELECT id, nombre, tipo_grado, institucion_id FROM grades WHERE id = $1`,
+    [gradeId]
+  );
+  return rows[0] || null;
+}

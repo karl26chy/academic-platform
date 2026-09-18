@@ -547,4 +547,55 @@ export default async function reportsSuite(world) {
     const reportAfter = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     equal(reportAfter.subjects[0].definitiva, null, 'el reporte ignora la nota huérfana preexistente');
   });
+
+  // ---- Generación masiva de boletines (GET /grades/:gradeId/bulk-report/pdf) ----
+
+  suite('Boletines masivos — Autorización y validaciones');
+
+  await test('sin sesión NO puede generar boletines masivos', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const res = await get(`/grades/${ctx.grade.id}/bulk-report/pdf?anio=2026`);
+    equal(res.status, 401, 'sin token debe retornar 401');
+  });
+
+  await test('docente NO puede generar boletines masivos', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const teacherToken = (await login(ctx.teacher.email, world.password)).token;
+    const res = await get(`/grades/${ctx.grade.id}/bulk-report/pdf?anio=2026`, teacherToken);
+    equal(res.status, 403, 'docente debe retornar 403');
+  });
+
+  await test('falta anio devuelve 400 en endpoint masivo', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const res = await get(`/grades/${ctx.grade.id}/bulk-report/pdf`, ctx.adminToken);
+    equal(res.status, 400, 'sin anio debe retornar 400');
+    ok(res.data?.error, 'debe incluir mensaje de error');
+  });
+
+  await test('admin A NO puede generar boletines masivos de un grado de otra institución', async () => {
+    const ctxA = await mkInstitution(10, 6);
+    const ctxB = await mkInstitution(10, 6);
+    // Admin de A intenta acceder al grado de B
+    const res = await get(`/grades/${ctxB.grade.id}/bulk-report/pdf?anio=2026`, ctxA.adminToken);
+    // Debe retornar 404 (grado no pertenece a su institución)
+    equal(res.status, 404, 'admin A no debe poder acceder al grado de B');
+  });
+
+  await test('grado sin estudiantes devuelve 422 en endpoint masivo', async () => {
+    const ctx = await mkInstitution(10, 6);
+    // Crear un grado nuevo sin estudiantes matriculados
+    const gradeVacio = (await post('/grades', {
+      institucion_id: ctx.inst.id, nombre: 'Grado Vacío', tipo_grado: 'Z',
+    }, su)).data;
+    track(world, 'grades', gradeVacio.id);
+    const res = await get(`/grades/${gradeVacio.id}/bulk-report/pdf?anio=2026`, ctx.adminToken);
+    equal(res.status, 422, 'grado sin estudiantes debe retornar 422');
+    ok(res.data?.error, 'debe incluir mensaje informativo');
+  });
+
+  await test('grado inexistente devuelve 404 en endpoint masivo', async () => {
+    const ctx = await mkInstitution(10, 6);
+    const res = await get(`/grades/grado-que-no-existe/bulk-report/pdf?anio=2026`, ctx.adminToken);
+    equal(res.status, 404, 'grado inexistente debe retornar 404');
+  });
 }
