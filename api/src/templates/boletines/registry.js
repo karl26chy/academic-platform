@@ -18,6 +18,12 @@ export const templates = [
     htmlPath: 'liceo/template.html',
     cssPath: 'liceo/style.css',
   },
+  {
+    id: 'wisdom',
+    name: 'Centro Educativo Wisdom',
+    htmlPath: 'wisdom/template.html',
+    cssPath: 'wisdom/style.css',
+  },
 ];
 
 /**

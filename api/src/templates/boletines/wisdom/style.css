@@ -1,0 +1,290 @@
+/* Reseteo general */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Tarjeta principal estilo hoja de papel */
+.boletin-card {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 900px;
+    padding: 30px;
+    border: 1px solid #000000;
+}
+
+/* Encabezado */
+.header {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    border-top: 2px solid #000000;
+    border-bottom: 2px solid #000000;
+    padding-top: 10px;
+    padding-bottom: 12px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-bottom: 18px;
+    background-color: #ffffff;
+}
+
+.logo-colegio {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.header-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.nombre-colegio {
+    color: #000000;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-left: -60px;
+}
+
+.lema {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #000000;
+    line-height: 1.35;
+    margin-top: 2px;
+    margin-left: -60px;
+}
+
+.titulo-informe {
+    font-size: 1.1rem;
+    color: #000000;
+    margin-top: 10px;
+    font-weight: 700;
+    margin-left: -60px;
+}
+
+.periodo-tag {
+    display: inline-block;
+    background-color: #000000;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 3px 12px;
+    border-radius: 4px;
+    margin-top: 6px;
+}
+
+/* Secciones generales */
+.section-container {
+    margin-bottom: 18px;
+}
+
+.section-title {
+    font-size: 0.8rem;
+    background-color: #ffffff;
+    color: #000000;
+    padding: 5px 8px;
+    border-left: 3px solid #000000;
+    border-bottom: 1px solid #000000;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+/* Tablas */
+.info-table, .desempeno-table, .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+
+.info-table td {
+    padding: 6px 8px;
+    border: 1px solid #000000;
+}
+
+.info-label {
+    background-color: #ffffff;
+    font-weight: bold;
+    color: #000000;
+    width: 20%;
+}
+
+.info-value {
+    color: #000000;
+}
+
+.desempeno-table th {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 7px 5px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    border: 1px solid #000000;
+    font-weight: bold;
+}
+
+.desempeno-table td {
+    padding: 6px 5px;
+    border: 1px solid #000000;
+}
+
+.desempeno-table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+/* Utilidades de texto */
+.center { text-align: center; }
+.right { text-align: right; }
+.bold { font-weight: bold; }
+
+.nota-baja {
+    color: #000000;
+    font-weight: bold;
+}
+
+/* Badges de estado */
+.badge {
+    padding: 2px 6px;
+    border: 1px solid #000000;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: inline-block;
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.badge.aprobado {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.badge.reprobado {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Cuadrícula inferior (Asistencia, Observaciones, Escala) */
+.bottom-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.bottom-box {
+    flex: 1;
+    border: 1px solid #000000;
+    padding: 10px;
+    background-color: #ffffff;
+}
+
+.box-title {
+    font-size: 0.75rem;
+    color: #000000;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.mini-table td {
+    padding: 4px 0;
+    border-bottom: 1px dashed #000000;
+}
+
+.highlight-row {
+    background-color: #f3f4f6;
+}
+
+.observaciones-texto {
+    font-size: 0.73rem;
+    line-height: 1.45;
+    color: #000000;
+    text-align: justify;
+}
+
+.escala-lista {
+    list-style: none;
+    font-size: 0.73rem;
+}
+
+.escala-lista li {
+    padding: 3px 0;
+    border-bottom: 1px dashed #000000;
+}
+
+/* Firmas */
+.firmas-container {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 35px;
+    margin-bottom: 15px;
+}
+
+.firma-box {
+    text-align: center;
+    width: 200px;
+}
+
+.linea-firma {
+    border-bottom: 1px solid #000000;
+    margin-bottom: 6px;
+}
+
+.cargo {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #000000;
+}
+
+.nombre {
+    font-size: 0.7rem;
+    color: #000000;
+}
+
+/* Pie de página */
+.footer {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    border-top: 1px solid #000000;
+    padding-top: 8px;
+    font-size: 0.68rem;
+    color: #000000;
+}
+
+/* Adaptación para impresión */
+@media print {
+    @page {
+        size: letter portrait;
+        margin: 10mm;
+    }
+
+    body {
+        background-color: #ffffff;
+        padding: 0;
+    }
+
+    .boletin-card {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+        padding: 0;
+    }
+}
