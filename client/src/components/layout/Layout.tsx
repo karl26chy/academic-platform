@@ -31,13 +31,26 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <Building2 className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-md font-bold text-gray-900 leading-tight truncate">
-              {currentInstitution ? currentInstitution.nombre : 'Portal General'}
-            </h1>
-            {activeSubdomain && (
-              <span className="text-[11px] font-medium text-gray-500 truncate block">
-                {activeSubdomain}.plataforma.com
-              </span>
+            {user?.rol === 'super_admin' ? (
+              <>
+                <h1 className="text-md font-bold text-gray-900 leading-tight truncate">
+                  Kamak
+                </h1>
+                <span className="text-[11px] font-medium text-gray-500 truncate block">
+                  Software de gestión educativa
+                </span>
+              </>
+            ) : (
+              <>
+                <h1 className="text-md font-bold text-gray-900 leading-tight truncate">
+                  {currentInstitution ? currentInstitution.nombre : 'Portal General'}
+                </h1>
+                {activeSubdomain && (
+                  <span className="text-[11px] font-medium text-gray-500 truncate block">
+                    {activeSubdomain}.plataforma.com
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
