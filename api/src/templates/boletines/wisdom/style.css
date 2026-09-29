@@ -25,24 +25,29 @@ body {
 
 /* Encabezado */
 .header {
+    position: relative;
     display: flex;
     align-items: center;
+    justify-content: center;
     text-align: center;
     border-top: 2px solid #000000;
     border-bottom: 2px solid #000000;
     padding-top: 10px;
     padding-bottom: 12px;
-    padding-left: 20px;
+    padding-left: 130px;
     padding-right: 20px;
     margin-bottom: 18px;
     background-color: #ffffff;
 }
 
 .logo-colegio {
-    width: 80px;
-    height: 80px;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 110px;
+    height: 110px;
     object-fit: contain;
-    flex-shrink: 0;
 }
 
 .header-content {
@@ -58,7 +63,6 @@ body {
     font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 0.5px;
-    margin-left: -60px;
 }
 
 .lema {
@@ -67,7 +71,6 @@ body {
     color: #000000;
     line-height: 1.35;
     margin-top: 2px;
-    margin-left: -60px;
 }
 
 .titulo-informe {
@@ -75,7 +78,6 @@ body {
     color: #000000;
     margin-top: 10px;
     font-weight: 700;
-    margin-left: -60px;
 }
 
 .periodo-tag {
