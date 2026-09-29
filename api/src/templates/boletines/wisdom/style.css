@@ -45,8 +45,8 @@ body {
     left: 20px;
     top: 50%;
     transform: translateY(-50%);
-    width: 180px;
-    height: 180px;
+    width: 160px;
+    height: 160px;
     object-fit: contain;
 }
 
