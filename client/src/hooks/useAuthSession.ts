@@ -12,7 +12,7 @@ interface SessionDeps {
   realSubdomain: string | null;
   setSimulatedSubdomain: (subdomain: string | null) => void;
   /** Recarga completa tras un login correcto. */
-  loadEverything: () => Promise<void>;
+  loadEverything: () => Promise<Institution[] | undefined>;
   /** Descarta los datos de la sesión que termina. */
   resetSessionCollections: () => void;
   /** Limpia el fallo de carga: no debe sobrevivir al cambio de sesión. */
@@ -60,6 +60,17 @@ export function useAuthSession({
       const me = await api.getMe();
       setUser(me);
       localStorage.setItem(USER_KEY, JSON.stringify(me));
+
+      // Sincronizar subdominio simulado con la institución del usuario restaurado
+      if (!realSubdomain && me.institucion_id) {
+        api.getInstitutions().then(instList => {
+          const inst = instList.find(i => i.id === me.institucion_id);
+          if (inst) setSimulatedSubdomain(inst.subdominio);
+        }).catch(() => {});
+      } else if (!realSubdomain && me.rol === 'super_admin') {
+        setSimulatedSubdomain(null);
+      }
+
       return true;
     } catch {
       setAuthToken(null);
@@ -67,12 +78,13 @@ export function useAuthSession({
       setUser(null);
       return false;
     }
-  }, []);
+  }, [realSubdomain, setSimulatedSubdomain]);
 
   const rechazar = (mensaje: string) => {
     setAuthError(mensaje);
     setAuthToken(null);
     setUser(null);
+    resetSessionCollections();
     return false;
   };
 
@@ -85,13 +97,25 @@ export function useAuthSession({
     try {
       setAuthError(null);
       clearDataError();
+      resetSessionCollections();
 
       const payload = buildLoginPayload(identifier, password);
 
       const { token, user: authenticated } = await api.login(payload);
       setAuthToken(token);
 
-      const userInstitution = institutions.find(inst => inst.id === authenticated.institucion_id);
+      // Resolver la institución del usuario con datos frescos si es necesario
+      let currentInsts = institutions;
+      let userInstitution = currentInsts.find(inst => inst.id === authenticated.institucion_id);
+      if (!userInstitution && authenticated.institucion_id) {
+        try {
+          const freshInsts = await api.getInstitutions();
+          currentInsts = freshInsts;
+          userInstitution = freshInsts.find(inst => inst.id === authenticated.institucion_id);
+        } catch {
+          // Continúa con la validación estándar
+        }
+      }
 
       if (authenticated.rol !== 'super_admin') {
         // Solo el subdominio REAL del hostname valida el acceso; el valor simulado
@@ -104,24 +128,42 @@ export function useAuthSession({
         if (userInstitution && !userInstitution.activa) {
           return rechazar('La institución asociada está desactivada.');
         }
-        // Portal general (sin subdominio real): re-sincroniza la simulación con la
+        // Portal general (sin subdominio real): sincroniza la simulación con la
         // institución del usuario que acaba de autenticarse.
         if (!realSubdomain && userInstitution) {
           setSimulatedSubdomain(userInstitution.subdominio);
         }
-      } else if (realSubdomain) {
-        return rechazar('El Super Administrador solo puede iniciar sesión en el portal general/administración.');
+      } else {
+        if (realSubdomain) {
+          return rechazar('El Super Administrador solo puede iniciar sesión en el portal general/administración.');
+        }
+        // Super admin no pertenece a ninguna institución: limpiar simulación previa
+        if (!realSubdomain) {
+          setSimulatedSubdomain(null);
+        }
+      }
+
+      // Cargar todas las colecciones correspondientes al nuevo usuario antes de activar el dashboard
+      const loaded = await loadEverything();
+      if (!loaded) {
+        resetSessionCollections();
+        setAuthToken(null);
+        setUser(null);
+        localStorage.removeItem(USER_KEY);
+        setAuthError('No se pudieron cargar los datos de la cuenta. Intente nuevamente.');
+        return false;
       }
 
       setUser(authenticated);
       localStorage.setItem(USER_KEY, JSON.stringify(authenticated));
-      await loadEverything();
       return true;
     } catch (err: unknown) {
       // El mensaje del API llega intacto: "Credenciales inválidas", "Tu cuenta
       // está desactivada"... Solo se generaliza si no hay nada que mostrar.
       setAuthError(err instanceof Error ? err.message : 'Error al intentar iniciar sesión.');
       setAuthToken(null);
+      setUser(null);
+      resetSessionCollections();
       return false;
     }
   };
@@ -135,7 +177,6 @@ export function useAuthSession({
     resetSessionCollections();
     clearDataError();
     setAuthError(null);
-    // El subdominio simulado se conserva para seguir en la misma institución.
   };
 
   return { user, authError, login, logout, restoreUser };

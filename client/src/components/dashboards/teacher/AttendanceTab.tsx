@@ -8,8 +8,6 @@ import { compareStudents, studentFullName } from '../../../lib/people';
 import { ESTADOS, type Estado, getLocalTodayString, filterAttendanceByDateAndClass } from '../../../lib/attendance';
 import type { AcademicPeriod, Assignment, Subject, Grade, User, Attendance } from '../../../types';
 
-export { ESTADOS, type Estado, getLocalTodayString };
-
 interface AttendanceTabProps {
   assignment: Assignment;
   subject?: Subject | null;

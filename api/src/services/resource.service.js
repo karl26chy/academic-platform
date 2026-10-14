@@ -235,6 +235,12 @@ export async function destroy(resource, id, user) {
     return row;
   }
 
+  if (resource === 'users' && existing.rol === 'teacher') {
+    const row = await repo.deleteTeacherSafely(id);
+    if (!row) throw notFound();
+    return row;
+  }
+
   const row = await repo.remove(resource, id);
   if (!row) throw notFound();
   return row;

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Edit3, Plus, Users } from 'lucide-react';
+import { Edit3, Plus, Trash2, Users } from 'lucide-react';
 import { api } from '../../../services/api';
 import { Card, CardTitle, EmptyMessage, Field, INPUT, toast } from '../../ui';
+import { ConfirmDeleteModal } from '../super-admin/ConfirmDeleteModal';
 import { useApp } from '../../../context/useApp';
 import type { User } from '../../../types';
 
@@ -17,9 +18,10 @@ export const DocentesTab: React.FC = () => {
   const [password, setPassword] = useState('');
 
   const [editing, setEditing] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState<User | null>(null);
 
   const instId = user?.institucion_id;
-  const misDocentes = users.filter(u => u.rol === 'teacher' && u.institucion_id === instId);
+  const misDocentes = users.filter(u => u.rol === 'teacher' && u.institucion_id === instId && u.activo !== false);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,19 @@ export const DocentesTab: React.FC = () => {
       await refreshData();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al actualizar docente.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    try {
+      await api.deleteUser(deleting.id);
+      toast.success('Docente eliminado exitosamente.');
+      setDeleting(null);
+      await refreshData();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar docente.');
+      setDeleting(null);
     }
   };
 
@@ -108,12 +123,20 @@ export const DocentesTab: React.FC = () => {
                   <span className="text-sm font-semibold text-gray-900 block">{d.nombre} {d.apellido}</span>
                   <span className="text-xs text-gray-400">{d.email || 'Sin correo registrado'}</span>
                 </div>
-                <button
-                  onClick={() => setEditing(d)} title="Editar docente"
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors shrink-0"
-                >
-                  <Edit3 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setEditing(d)} title="Editar docente"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeleting(d)} title="Eliminar docente"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -155,6 +178,15 @@ export const DocentesTab: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {deleting && (
+        <ConfirmDeleteModal
+          title="Eliminar Docente"
+          message={<>¿Estás seguro de eliminar al docente <strong>{deleting.nombre} {deleting.apellido}</strong>?</>}
+          onCancel={() => setDeleting(null)}
+          onConfirm={handleDelete}
+        />
       )}
     </div>
   );

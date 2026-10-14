@@ -1,4 +1,4 @@
-import { post, put, del } from '../helpers/http.js';
+import { get, post, put, del } from '../helpers/http.js';
 import { track } from '../helpers/fixtures.js';
 import { suite, test, equal, expectError } from '../helpers/runner.js';
 
@@ -368,5 +368,79 @@ export default async function rbacWriteSuite(world) {
     }, world.tokens.teacherA);
     equal(res.status, 201, 'status');
     track(world, 'citations', res.data.id);
+  });
+
+  // ---- Eliminación de usuarios y docentes ---------------------------------
+  await test('un profesor no puede eliminar usuarios', async () => {
+    expectError(
+      await del(`/users/${world.users.teacherA2.id}`, world.tokens.teacherA),
+      403,
+      'No autorizado.'
+    );
+  });
+
+  await test('un admin no puede eliminar usuarios de otra institución', async () => {
+    expectError(
+      await del(`/users/${world.users.teacherB.id}`, world.tokens.adminA),
+      403,
+      'No autorizado.'
+    );
+  });
+
+  await test('un admin no puede eliminar a otro administrador', async () => {
+    expectError(
+      await del(`/users/${world.users.adminA.id}`, world.tokens.adminA),
+      403,
+      'Solo se permite eliminar docentes o estudiantes de su propia institución.'
+    );
+  });
+
+  await test('un admin sí puede eliminar un docente sin dependencias (borrado físico)', async () => {
+    const nuevoDocente = (await post('/users', {
+      email: `doc.fresco.${world.id}@test.local`,
+      password: world.password,
+      rol: 'teacher',
+      nombre: 'Docente',
+      apellido: 'SinDeps',
+      institucion_id: world.inst.A.id,
+      activo: true,
+    }, world.tokens.adminA)).data;
+
+    const delRes = await del(`/users/${nuevoDocente.id}`, world.tokens.adminA);
+    equal(delRes.status, 200, 'status borrado exitoso');
+    equal(delRes.data.id, nuevoDocente.id, 'devuelve el docente borrado');
+
+    const getRes = await get(`/users/${nuevoDocente.id}`, world.tokens.adminA);
+    equal(getRes.status, 404, 'el docente ya no existe físicamente');
+  });
+
+  await test('eliminar un docente con datos académicos lo desactiva lógicamente para conservar historial', async () => {
+    // world.users.teacherA tiene asignaciones asociadas
+    const delRes = await del(`/users/${world.users.teacherA.id}`, world.tokens.adminA);
+    equal(delRes.status, 200, 'status desactivación exitosa');
+    equal(delRes.data.id, world.users.teacherA.id, 'id coincide');
+    equal(delRes.data.activo, false, 'queda desactivado lógicamente (activo: false)');
+
+    // El docente sigue existiendo para conservar integridad referencial de historial
+    const getRes = await get(`/users/${world.users.teacherA.id}`, world.tokens.adminA);
+    equal(getRes.status, 200, 'el registro se conserva para historial');
+    equal(getRes.data.activo, false, 'su estado es inactivo');
+
+    // Su intento de login posterior devuelve 403
+    expectError(
+      await post('/auth/login', {
+        email: world.users.teacherA.email,
+        password: world.password,
+      }),
+      403,
+      'Tu cuenta está desactivada. Contacta al administrador.'
+    );
+
+    // Su intento de consultar /auth/me también devuelve 403 impidiendo restaurar sesión
+    expectError(
+      await get('/auth/me', world.tokens.teacherA),
+      403,
+      'Tu cuenta está desactivada. Contacta al administrador.'
+    );
   });
 }

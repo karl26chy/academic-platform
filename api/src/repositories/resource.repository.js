@@ -221,6 +221,80 @@ export async function countPeriodDependencies(periodId) {
   return rows[0];
 }
 
+/** Registros académicos asociados a un docente (para evitar borrados destructivos). */
+export async function countTeacherDependencies(teacherId) {
+  const { rows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*) FROM assignments WHERE "profesor_id" = $1)::int AS asignaciones,
+       (SELECT COUNT(*) FROM evaluations WHERE "creado_por" = $1)::int AS evaluaciones,
+       (SELECT COUNT(*) FROM marks WHERE "registrado_por" = $1)::int AS notas,
+       (SELECT COUNT(*) FROM attendance WHERE "registrado_por" = $1)::int AS asistencias,
+       (SELECT COUNT(*) FROM citations WHERE "creado_por" = $1)::int AS citas,
+       (SELECT COUNT(*) FROM subject_achievements WHERE "updated_by" = $1)::int AS logros,
+       (SELECT COUNT(*) FROM student_observations WHERE "updated_by" = $1)::int AS observaciones,
+       (SELECT COUNT(*) FROM messages WHERE "remitente_id" = $1 OR "destinatario_id" = $1)::int AS mensajes`,
+    [teacherId]
+  );
+  return rows[0];
+}
+
+/**
+ * Elimina o desactiva a un docente de forma transaccional y atómica,
+ * evitando condiciones de carrera entre la comprobación de dependencias y el borrado.
+ */
+export async function deleteTeacherSafely(teacherId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: userRows } = await client.query('SELECT * FROM users WHERE id = $1 FOR UPDATE', [teacherId]);
+    if (userRows.length === 0) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    const { rows: depRows } = await client.query(
+      `SELECT
+         (SELECT COUNT(*) FROM assignments WHERE "profesor_id" = $1)::int AS asignaciones,
+         (SELECT COUNT(*) FROM evaluations WHERE "creado_por" = $1)::int AS evaluaciones,
+         (SELECT COUNT(*) FROM marks WHERE "registrado_por" = $1)::int AS notas,
+         (SELECT COUNT(*) FROM attendance WHERE "registrado_por" = $1)::int AS asistencias,
+         (SELECT COUNT(*) FROM citations WHERE "creado_por" = $1)::int AS citas,
+         (SELECT COUNT(*) FROM subject_achievements WHERE "updated_by" = $1)::int AS logros,
+         (SELECT COUNT(*) FROM student_observations WHERE "updated_by" = $1)::int AS observaciones,
+         (SELECT COUNT(*) FROM messages WHERE "remitente_id" = $1 OR "destinatario_id" = $1)::int AS mensajes`,
+      [teacherId]
+    );
+
+    const deps = depRows[0];
+    const totalDeps =
+      (deps.asignaciones || 0) +
+      (deps.evaluaciones || 0) +
+      (deps.notas || 0) +
+      (deps.asistencias || 0) +
+      (deps.citas || 0) +
+      (deps.logros || 0) +
+      (deps.observaciones || 0) +
+      (deps.mensajes || 0);
+
+    let result;
+    if (totalDeps > 0) {
+      const { rows } = await client.query('UPDATE users SET activo = false WHERE id = $1 RETURNING *', [teacherId]);
+      result = rows[0];
+    } else {
+      const { rows } = await client.query('DELETE FROM users WHERE id = $1 RETURNING *', [teacherId]);
+      result = rows[0];
+    }
+
+    await client.query('COMMIT');
+    return result ? sanitizeRow('users', result) : null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 // --- Matrículas: consultas para validar duplicados --------------------------
 
 /** Matrícula existente de un estudiante, si la tiene. */

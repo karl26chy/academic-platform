@@ -39,9 +39,9 @@ export function useTeacherClass(selectedAssignId: string) {
           .filter(p => p.institucion_id === user.institucion_id)
           .sort((a, b) => (b.anio - a.anio) || (a.numero - b.numero));
         setPeriods(propios);
-        // Selecciona el primer periodo abierto por defecto.
+        // Selecciona el primer periodo abierto por defecto o conserva el seleccionado si pertenece a la institución.
         const abierto = propios.find(p => p.activo);
-        setSelectedPeriodId(prev => prev || (abierto ? abierto.id : propios[0]?.id || ''));
+        setSelectedPeriodId(prev => (propios.some(p => p.id === prev) ? prev : (abierto ? abierto.id : propios[0]?.id || '')));
       }).catch(() => {});
     }
     return () => { activo = false; };

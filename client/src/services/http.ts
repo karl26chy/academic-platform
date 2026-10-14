@@ -96,9 +96,13 @@ export async function apiFetch<T>(
     const message = await mensajeDelServidor(response);
 
     // Solo un 401 fuera del login invalida la sesión que teníamos por buena.
+    // Solo si el token de la petición rechazada sigue siendo el token actual (evita
+    // que una petición rezagada de una sesión anterior invalide la sesión recién abierta).
     if (response.status === 401 && !isAuthAttempt) {
-      setAuthToken(null);
-      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+      if (token && getAuthToken() === token) {
+        setAuthToken(null);
+        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+      }
     }
 
     throw new ApiError(response.status, message);

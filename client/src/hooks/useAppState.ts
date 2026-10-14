@@ -69,8 +69,15 @@ export function useAppState(): AppContextValue {
     setDataError,
   ]);
 
+  // La institución del usuario autenticado es la fuente de verdad prioritaria.
+  // Solo se recurre a la resolución por subdominio cuando el usuario no tiene
+  // institución fija o no hay sesión iniciada (pantalla de login).
   const currentInstitution =
-    collections.institutions.find(inst => inst.subdominio === activeSubdomain) || null;
+    (user?.institucion_id
+      ? collections.institutions.find(inst => inst.id === user.institucion_id)
+      : null) ??
+    collections.institutions.find(inst => inst.subdominio === activeSubdomain) ??
+    null;
 
   return {
     user,
@@ -82,7 +89,9 @@ export function useAppState(): AppContextValue {
     setSimulatedSubdomain,
     login,
     logout,
-    refreshData: loadEverything,
+    refreshData: async () => {
+      await loadEverything();
+    },
     currentInstitution,
     navigateToTab,
     setNavigateToTab,

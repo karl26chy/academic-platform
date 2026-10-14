@@ -14,7 +14,7 @@ export function useAdminDashboard() {
   const instUsers = users.filter(u => u.institucion_id === currentInstitution?.id);
   const instGrades = grades.filter(g => g.institucion_id === currentInstitution?.id);
   const studentUsers = instUsers.filter(u => u.rol === 'student');
-  const teacherUsers = instUsers.filter(u => u.rol === 'teacher');
+  const teacherUsers = instUsers.filter(u => u.rol === 'teacher' && u.activo !== false);
 
   const getSubjectName = useCallback(
     (subjId: string) => subjects.find(s => s.id === subjId)?.nombre || 'Materia',

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { api, getAuthToken, ApiError } from '../services/api';
 import type {
   User,
@@ -59,8 +59,12 @@ export function usePlatformData() {
   const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState<DataError | null>(null);
 
+  // Contador de versión de carga: invalida respuestas rezagadas de sesiones anteriores.
+  const loadSeqRef = useRef(0);
+
   /** Vacía lo que pertenece a la sesión; las instituciones son públicas. */
   const resetSessionCollections = useCallback(() => {
+    loadSeqRef.current += 1;
     setUsers([]);
     setGrades([]);
     setSubjects([]);
@@ -82,6 +86,7 @@ export function usePlatformData() {
 
   /** El resto de colecciones, que requieren sesión iniciada. */
   const fetchSessionCollections = useCallback(async () => {
+    const seq = ++loadSeqRef.current;
     const [userList, gradeList, subList, assignList, sgList, attList, markList, citList, msgList, evalList] =
       await Promise.all([
         api.getUsers(),
@@ -95,6 +100,8 @@ export function usePlatformData() {
         api.getMessages(),
         api.getEvaluations(),
       ]);
+
+    if (seq !== loadSeqRef.current) return;
 
     setUsers(userList);
     setGrades(gradeList);
@@ -112,7 +119,8 @@ export function usePlatformData() {
    *  No toca el flag global `loading`: así el refresh tras una operación CRUD
    *  actualiza las colecciones en segundo plano sin desmontar el dashboard
    *  (el loading de pantalla completa solo lo controla el arranque inicial). */
-  const loadEverything = useCallback(async () => {
+  const loadEverything = useCallback(async (): Promise<Institution[] | undefined> => {
+    const seq = ++loadSeqRef.current;
     try {
       setDataError(null);
 
@@ -121,8 +129,10 @@ export function usePlatformData() {
       // provocaba una cascada de 401 que volvía a levantar el mismo error.
       if (!getAuthToken()) {
         resetSessionCollections();
-        setInstitutions(await api.getInstitutions());
-        return;
+        const instList = await api.getInstitutions();
+        if (seq !== loadSeqRef.current) return;
+        setInstitutions(instList);
+        return instList;
       }
 
       const [instList, userList, gradeList, subList, assignList, sgList, attList, markList, citList, msgList, evalList] =
@@ -140,6 +150,8 @@ export function usePlatformData() {
           api.getEvaluations(),
         ]);
 
+      if (seq !== loadSeqRef.current) return;
+
       setInstitutions(instList);
       setUsers(userList);
       setGrades(gradeList);
@@ -151,9 +163,12 @@ export function usePlatformData() {
       setCitations(citList);
       setMessages(msgList);
       setEvaluations(evalList);
+      return instList;
     } catch (err: unknown) {
-      console.error('Failed to load initial data:', err);
-      setDataError(describirFallo(err));
+      if (seq === loadSeqRef.current) {
+        console.error('Failed to load initial data:', err);
+        setDataError(describirFallo(err));
+      }
     }
   }, [resetSessionCollections]);
 

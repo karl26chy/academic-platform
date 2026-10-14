@@ -57,6 +57,11 @@ const writeAccessByResource = {
     if (ctx.rol !== 'admin') denegar();
     if (campo(ctx, 'institucion_id') !== ctx.instId) denegar();
     if (campo(ctx, 'rol') === 'super_admin') denegar();
+    // En borrado (data vacío), un admin institucional solo puede eliminar docentes o estudiantes de su institución
+    const isDelete = Object.keys(ctx.data || {}).length === 0;
+    if (isDelete && ctx.existingRow && ctx.existingRow.rol !== 'teacher' && ctx.existingRow.rol !== 'student') {
+      denegar('Solo se permite eliminar docentes o estudiantes de su propia institución.');
+    }
   },
 
   grades: soloAdminDeLaInstitucion,

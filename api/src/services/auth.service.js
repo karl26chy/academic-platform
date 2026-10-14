@@ -80,5 +80,6 @@ export async function login({ email, identificacion, password } = {}) {
 export async function currentUser(userId) {
   const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
   if (!rows[0]) throw new HttpError(404, 'Usuario no encontrado.');
+  if (!rows[0].activo) throw new HttpError(403, 'Tu cuenta está desactivada. Contacta al administrador.');
   return sinPassword(rows[0]);
 }

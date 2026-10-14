@@ -94,7 +94,9 @@ const MainAppContent: React.FC = () => {
 
   const Dashboard = DASHBOARDS[user.rol];
 
-  return <Layout>{Dashboard ? <Dashboard /> : <UnknownRole rol={user.rol} />}</Layout>;
+  // key={user.id} asegura que al cambiar de cuenta se desmonte completamente
+  // el dashboard anterior y sus estados internos, sin requerir recarga de página.
+  return <Layout key={user.id}>{Dashboard ? <Dashboard key={user.id} /> : <UnknownRole rol={user.rol} />}</Layout>;
 };
 
 function App() {

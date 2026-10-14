@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compareStudents, sortStudents, studentFullName } from './people.ts';
+import { sortStudents, studentFullName } from './people.ts';
 import { ESTADOS, type Estado, getLocalTodayString, filterAttendanceByDateAndClass } from './attendance.ts';
 import type { Attendance, User } from '../types.ts';
 
