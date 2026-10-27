@@ -20,14 +20,22 @@ services:
     command: sh -c "node scripts/setup.js && node src/server.js"
     environment:
       PORT: 5000
+      NODE_ENV: production
       DATABASE_URL: postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD:-platform}@db:5432/${POSTGRES_DB:-platform}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      # Obligatorio: sin él (o con el de ejemplo) la API no arranca.
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env (al menos 32 caracteres aleatorios)}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      # Dominio(s) del frontend separados por coma; vacío = solo mismo origen.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      # Proxies delante del API (nginx del cliente = 1; súmale uno por cada proxy extra).
+      TRUST_PROXY: ${TRUST_PROXY:-1}
     volumes:
       # Plantillas de boletín en vivo: los cambios de CSS/HTML aplican sin rebuild
       - ./api/src/templates:/app/src/templates:ro
     ports:
-      - "${API_PORT:-5000}:5000"
+      # Solo accesible desde el propio servidor: el público entra por el nginx
+      # del cliente. Exponerlo saltaría el proxy y permitiría falsear la IP.
+      - "127.0.0.1:${API_PORT:-5000}:5000"
     depends_on:
       db:
         condition: service_healthy

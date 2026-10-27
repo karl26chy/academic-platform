@@ -53,11 +53,30 @@ if (process.env.NODE_ENV === 'production' && (!databaseUrl || databaseUrl.trim()
   );
 }
 
+// Con el secreto de ejemplo cualquiera podría firmar un token de super admin.
+const INSECURE_JWT_SECRETS = [
+  'dev-secret-change-me',
+  'local-dev-secret-change-me',
+  'genera-un-secreto-largo-y-aleatorio',
+  'cambia-esto-por-un-secreto-largo',
+];
+const jwtSecret = process.env.JWT_SECRET;
+if (process.env.NODE_ENV === 'production') {
+  if (!jwtSecret || jwtSecret.length < 32 || INSECURE_JWT_SECRETS.includes(jwtSecret)) {
+    throw new Error(
+      '[ERROR CRÍTICO] JWT_SECRET es obligatorio en producción: al menos 32 caracteres aleatorios ' +
+        'y distinto de los valores de ejemplo. Genera uno con:\n' +
+        "  node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\""
+    );
+  }
+}
+
 export default {
   port: process.env.PORT || 5000,
   // El fallback a localhost queda solo para desarrollo/pruebas.
   // En 55432 para no colisionar y alinear con TEST_DATABASE_URL.
   databaseUrl: databaseUrl || 'postgres://platform:platform@localhost:55432/platform',
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-me',
+  // El valor por defecto solo llega a usarse fuera de producción (ver arriba).
+  jwtSecret: jwtSecret || 'dev-secret-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
 };

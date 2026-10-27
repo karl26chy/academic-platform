@@ -442,5 +442,16 @@ export default async function rbacWriteSuite(world) {
       403,
       'Tu cuenta está desactivada. Contacta al administrador.'
     );
+
+    // Y el token que ya tenía deja de servir al instante (no al expirar).
+    expectError(
+      await get('/marks', world.tokens.teacherA),
+      403,
+      'Tu cuenta está desactivada. Contacta al administrador.'
+    );
+
+    // Las suites siguientes siguen usando a teacherA: se reactiva.
+    const reactivado = await put(`/users/${world.users.teacherA.id}`, { activo: true }, world.tokens.super);
+    equal(reactivado.status, 200, 'teacherA reactivado para el resto de la suite');
   });
 }

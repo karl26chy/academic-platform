@@ -5,6 +5,7 @@ import { authorizeWrite } from '../policies/write-access.policy.js';
 import { validateRow } from '../validators/index.js';
 import { notFound, HttpError } from '../shared/http-error.js';
 import { hash } from '../shared/password.js';
+import { forgetUserState } from '../repositories/session.repository.js';
 
 /**
  * Casos de uso sobre cualquier recurso del catálogo.
@@ -43,7 +44,7 @@ export async function getById(resource, id, user) {
 
 export async function create(resource, body, user) {
   const data = pickColumns(resource, body);
-  await authorizeWrite(resource, data, null, user);
+  await authorizeWrite(resource, data, null, user, 'create');
   await validateRow(resource, data, null);
   await hashSecrets(resource, data);
   ensureYear(resource, data);
@@ -72,7 +73,7 @@ export async function replace(resource, id, body, user) {
   if (!existing) throw notFound();
 
   const data = pickColumns(resource, body);
-  await authorizeWrite(resource, data, existing, user);
+  await authorizeWrite(resource, data, existing, user, 'update');
   await validateRow(resource, data, existing);
   await hashSecrets(resource, data);
   ensureYear(resource, data);
@@ -86,6 +87,8 @@ export async function replace(resource, id, body, user) {
 
   const row = await repo.update(resource, id, data);
   if (!row) throw notFound();
+  // Rol, institución o activo pueden haber cambiado: la sesión se relee.
+  if (resource === 'users') forgetUserState(id);
   return row;
 }
 
@@ -136,11 +139,11 @@ function detalleConteos(conteos, labels) {
     : partes[0];
 }
 
-export async function destroy(resource, id, user) {
+async function destroyRow(resource, id, user) {
   const existing = await repo.findRaw(resource, id);
   if (!existing) throw notFound();
 
-  await authorizeWrite(resource, {}, existing, user);
+  await authorizeWrite(resource, {}, existing, user, 'delete');
 
   if (resource === 'institutions') {
     const deps = await repo.countInstitutionDependencies(id);
@@ -243,5 +246,12 @@ export async function destroy(resource, id, user) {
 
   const row = await repo.remove(resource, id);
   if (!row) throw notFound();
+  return row;
+}
+
+export async function destroy(resource, id, user) {
+  const row = await destroyRow(resource, id, user);
+  // Borrado o desactivación: la sesión del usuario deja de valer al instante.
+  if (resource === 'users') forgetUserState(id);
   return row;
 }

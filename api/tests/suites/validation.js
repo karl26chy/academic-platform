@@ -106,7 +106,7 @@ export default async function validationSuite(world) {
   await test('un email inválido devuelve 400', async () => {
     expectError(
       await post('/users', {
-        email: 'no-es-un-email', password: 'x', rol: 'student',
+        email: 'no-es-un-email', password: 'test1234', rol: 'student',
         institucion_id: world.inst.A.id,
       }, world.tokens.adminA),
       400,
@@ -117,7 +117,7 @@ export default async function validationSuite(world) {
   await test('un rol inválido devuelve 400', async () => {
     expectError(
       await post('/users', {
-        email: `rol${world.id}@test.local`, password: 'x', rol: 'director',
+        email: `rol${world.id}@test.local`, password: 'test1234', rol: 'director',
         institucion_id: world.inst.A.id,
       }, world.tokens.adminA),
       400,
@@ -140,7 +140,7 @@ export default async function validationSuite(world) {
   await test('un email duplicado devuelve 409', async () => {
     expectError(
       await post('/users', {
-        email: world.users.studentA.email, password: 'x', rol: 'student',
+        email: world.users.studentA.email, password: 'test1234', rol: 'student',
         nombre: 'Dup', apellido: 'Dup', institucion_id: world.inst.A.id,
         tipo_documento: 'TI', identificacion: `IDDUP${world.id}`,
       }, world.tokens.adminA),
@@ -181,7 +181,7 @@ export default async function validationSuite(world) {
   await test('crear un estudiante sin tipo de documento devuelve 400', async () => {
     expectError(
       await post('/users', {
-        email: `sintipo${world.id}@test.local`, password: 'x', rol: 'student',
+        email: `sintipo${world.id}@test.local`, password: 'test1234', rol: 'student',
         nombre: 'S', apellido: 'T', institucion_id: world.inst.A.id,
       }, world.tokens.adminA),
       400,
@@ -192,7 +192,7 @@ export default async function validationSuite(world) {
   await test('un tipo de documento fuera del catálogo devuelve 400', async () => {
     expectError(
       await post('/users', {
-        email: `tipomalo${world.id}@test.local`, password: 'x', rol: 'student',
+        email: `tipomalo${world.id}@test.local`, password: 'test1234', rol: 'student',
         nombre: 'S', apellido: 'T', institucion_id: world.inst.A.id,
         tipo_documento: 'DNI',
       }, world.tokens.adminA),

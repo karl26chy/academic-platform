@@ -1,17 +1,15 @@
-import jwt from 'jsonwebtoken';
-import config from '../config/index.js';
 import requireAuth from './require-auth.js';
+import { resolveSession, bearerToken, SessionError } from './session.js';
 
-/** Adjunta el usuario si hay token válido; si no, sigue como anónimo. */
-export function optionalAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-
+/** Adjunta el usuario si hay sesión válida; si no, sigue como anónimo. */
+export async function optionalAuth(req, res, next) {
+  const token = bearerToken(req);
   if (token) {
     try {
-      req.user = jwt.verify(token, config.jwtSecret);
-    } catch {
-      // token inválido/expirado: se trata como usuario anónimo (público)
+      req.user = await resolveSession(token);
+    } catch (err) {
+      // token inválido/expirado o cuenta desactivada: se trata como anónimo (público)
+      if (!(err instanceof SessionError)) return next(err);
     }
   }
   next();

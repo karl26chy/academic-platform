@@ -114,42 +114,39 @@ export default async function crudSuite(world) {
   await test('actualizar la contraseña la vuelve a hashear', async () => {
     const email = `rehash${world.id}@test.local`;
     const creado = (await post('/users', {
-      email, password: 'primera', rol: 'student', nombre: 'R', apellido: 'H',
+      email, password: 'primera1', rol: 'student', nombre: 'R', apellido: 'H',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'TI',
       identificacion: `IDREH${world.id}`,
     }, world.tokens.adminA)).data;
     track(world, 'users', creado.id);
 
-    const res = await put(`/users/${creado.id}`, { password: 'segunda' }, world.tokens.adminA);
+    const res = await put(`/users/${creado.id}`, { password: 'segunda2' }, world.tokens.adminA);
     equal(res.status, 200, 'status');
     notOk('password' in res.data, 'la respuesta no trae password');
 
-    const sesion = await loginStudent(`IDREH${world.id}`, 'segunda');
+    const sesion = await loginStudent(`IDREH${world.id}`, 'segunda2');
     equal(sesion.user.id, creado.id, 'inicia sesión con la contraseña nueva');
   });
 
   await test('enviar password vacío en un update no borra la contraseña', async () => {
     const email = `vacio${world.id}@test.local`;
     const creado = (await post('/users', {
-      email, password: 'inicial', rol: 'student', nombre: 'V', apellido: 'A',
+      email, password: 'inicial1', rol: 'student', nombre: 'V', apellido: 'A',
       institucion_id: world.inst.A.id, activo: true, tipo_documento: 'PPT',
       identificacion: `IDVAC${world.id}`,
     }, world.tokens.adminA)).data;
     track(world, 'users', creado.id);
 
     await put(`/users/${creado.id}`, { password: '', nombre: 'Vacio' }, world.tokens.adminA);
-    const sesion = await loginStudent(`IDVAC${world.id}`, 'inicial');
+    const sesion = await loginStudent(`IDVAC${world.id}`, 'inicial1');
     equal(sesion.user.nombre, 'Vacio', 'el nombre sí cambió y la contraseña sigue siendo válida');
   });
 
-  // [DEFECTO CONOCIDO — pendiente de decisión del propietario]
-  // updateRow() devuelve la fila sin sanear cuando no hay columnas que
-  // actualizar, filtrando el hash de la contraseña. Este test congela el
-  // comportamiento ACTUAL para que el refactor no lo altere por accidente.
-  // Debe invertirse en cuanto se apruebe la corrección.
-  await test('[defecto conocido] un PUT sin columnas válidas devuelve la fila sin sanear', async () => {
+  // Antes, sin columnas que actualizar, la fila salía sin sanear y filtraba el
+  // hash de la contraseña.
+  await test('un PUT sin columnas válidas devuelve la fila saneada (sin el hash)', async () => {
     const res = await put(`/users/${world.users.studentA.id}`, {}, world.tokens.adminA);
     equal(res.status, 200, 'status');
-    ok('password' in res.data, 'comportamiento actual: expone el hash (defecto a corregir)');
+    notOk('password' in res.data, 'el hash de la contraseña nunca sale');
   });
 }

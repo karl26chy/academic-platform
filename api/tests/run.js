@@ -20,6 +20,7 @@ import subjectsSuite from './suites/subjects.js';
 import studentsSuite from './suites/students.js';
 import reportsSuite from './suites/reports.js';
 import evaluationsSuite from './suites/evaluations.js';
+import securitySuite from './suites/security.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(here, '..');
@@ -62,7 +63,14 @@ function run(command, args, { quiet = false } = {}) {
 function startServer(entry) {
   const child = spawn('node', [entry], {
     cwd: apiRoot,
-    env: { ...process.env, DATABASE_URL, PORT, JWT_SECRET: 'test-secret', NODE_ENV: 'test' },
+    env: {
+      ...process.env, DATABASE_URL, PORT, JWT_SECRET: 'test-secret', NODE_ENV: 'test',
+      // La suite hace miles de peticiones con pocos tokens: sin esto chocaría
+      // con los límites de uso pensados para personas.
+      API_MAX_PER_MINUTE: '100000',
+      PDF_MAX_PER_MINUTE: '10000',
+      BULK_PDF_MAX_PER_10_MINUTES: '10000',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];
@@ -121,6 +129,8 @@ async function main() {
     await studentsSuite(world);
     await reportsSuite(world);
     await evaluationsSuite(world);
+    // Al final: reproduce ataques y modifica periodos/usuarios propios.
+    await securitySuite(world);
 
     exitCode = report();
   } catch (err) {

@@ -1,19 +1,17 @@
-import jwt from 'jsonwebtoken';
-import config from '../config/index.js';
+import { resolveSession, bearerToken, SessionError } from './session.js';
 
-/** Exige un JWT válido y deja el payload en req.user. */
-export default function requireAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-
+/** Exige un JWT válido de un usuario activo y deja el usuario en req.user. */
+export default async function requireAuth(req, res, next) {
+  const token = bearerToken(req);
   if (!token) {
     return res.status(401).json({ error: 'No autorizado. Inicia sesión.' });
   }
 
   try {
-    req.user = jwt.verify(token, config.jwtSecret);
+    req.user = await resolveSession(token);
     next();
-  } catch {
-    return res.status(401).json({ error: 'Sesión expirada o inválida. Inicia sesión de nuevo.' });
+  } catch (err) {
+    if (err instanceof SessionError) return res.status(err.status).json({ error: err.message });
+    next(err);
   }
 }

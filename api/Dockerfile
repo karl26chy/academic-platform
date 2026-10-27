@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Chromium para puppeteer-core (generación de boletines PDF), igual que Dockerfile.dev
 RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont

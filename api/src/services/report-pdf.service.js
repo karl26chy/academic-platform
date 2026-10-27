@@ -13,8 +13,77 @@ Handlebars.registerHelper('gte', (a, b) => a !== null && a !== undefined && a >=
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('inc', i => Number(i) + 1);
 
+/**
+ * Plantilla Handlebars ya compilada. El registro devuelve un objeto nuevo
+ * cuando la plantilla cambia en disco, así que basta con indexar por objeto.
+ */
+const compiledByEntry = new WeakMap();
+function compiledTemplate(entry) {
+  let fn = compiledByEntry.get(entry);
+  if (!fn) {
+    fn = Handlebars.compile(entry.html);
+    compiledByEntry.set(entry, fn);
+  }
+  return fn;
+}
+
 let cachedBrowser = null;
 let launchingPromise = null;
+
+/**
+ * Chromium ocupa cientos de MB de RAM y los boletines se generan pocas veces
+ * por periodo: se cierra tras este tiempo sin generar ningún PDF y se relanza
+ * bajo demanda en la siguiente petición.
+ */
+const BROWSER_IDLE_MS = Number(process.env.PDF_BROWSER_IDLE_MS) || 2 * 60 * 1000;
+
+/** PDFs en curso; mientras haya alguno el navegador no se cierra. */
+let activeRenders = 0;
+let idleTimer = null;
+
+/**
+ * Tope de páginas de Chromium abiertas a la vez en TODO el proceso, sumando
+ * boletines individuales y masivos de cualquier usuario. Los que excedan
+ * esperan turno en vez de disparar la RAM del servidor.
+ */
+const MAX_PAGINAS = Number(process.env.PDF_MAX_CONCURRENT) || 4;
+let paginasAbiertas = 0;
+const enEspera = [];
+
+async function turnoDePagina() {
+  if (paginasAbiertas < MAX_PAGINAS) {
+    paginasAbiertas++;
+    return;
+  }
+  // Quien libera la página le pasa el turno directamente (sin soltar el cupo).
+  await new Promise(resolve => enEspera.push(resolve));
+}
+
+function liberarPagina() {
+  const siguiente = enEspera.shift();
+  if (siguiente) siguiente();
+  else paginasAbiertas--;
+}
+
+function cancelIdleClose() {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+}
+
+function scheduleIdleClose() {
+  cancelIdleClose();
+  idleTimer = setTimeout(() => {
+    idleTimer = null;
+    if (activeRenders > 0 || !cachedBrowser) return;
+    const browser = cachedBrowser;
+    cachedBrowser = null;
+    browser.close().catch(() => {});
+  }, BROWSER_IDLE_MS);
+  // El temporizador no debe mantener vivo el proceso (tests, apagado).
+  idleTimer.unref?.();
+}
 
 /**
  * Obtiene o lanza la instancia Singleton de Puppeteer/Chromium.
@@ -32,7 +101,7 @@ async function getBrowser() {
     try {
       const browser = await puppeteer.launch({
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
-        headless: 'new',
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -62,9 +131,16 @@ export async function renderReportPDF(studentId, anio, institucionId) {
 
   // Reutiliza la lógica ya existente (buildPeriodData) sin duplicarla.
   const fakeUser = { institucion_id: institucionId, rol: 'admin' };
-  const data = await reportService.getYearReport(fakeUser, studentId, anio);
-
-  const tpl = await reportConfigRepo.getReportConfig(institucionId, 'boletin');
+  // Ambas consultas se lanzan a la vez; los errores se revisan en el orden de
+  // antes (primero el del reporte) para no cambiar la respuesta del API.
+  const [reportResult, configResult] = await Promise.allSettled([
+    reportService.getYearReport(fakeUser, studentId, anio),
+    reportConfigRepo.getReportConfig(institucionId, 'boletin'),
+  ]);
+  if (reportResult.status === 'rejected') throw reportResult.reason;
+  if (configResult.status === 'rejected') throw configResult.reason;
+  const data = reportResult.value;
+  const tpl = configResult.value;
   const templateId = tpl?.config?.template_id;
   if (!templateId) {
     // Fila vieja con {html,css} o sin config → mensaje claro, no genérico
@@ -78,7 +154,7 @@ export async function renderReportPDF(studentId, anio, institucionId) {
   const fechaGeneracion = new Date().toLocaleDateString('es-CO');
   const observaciones = data.observaciones || '';
 
-  const htmlBody = Handlebars.compile(entry.html)({
+  const htmlBody = compiledTemplate(entry)({
     student: data.student,
     institution: data.institution,
     grade: data.grade,
@@ -93,17 +169,36 @@ export async function renderReportPDF(studentId, anio, institucionId) {
   const css = entry.css || '';
   const htmlFinal = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${htmlBody}</body></html>`;
 
+  // Se cuenta antes de pedir el navegador para que el cierre por inactividad
+  // no pueda dispararse mientras se lanza o se usa.
+  activeRenders++;
+  cancelIdleClose();
+  await turnoDePagina();
   let page;
   try {
     const browser = await getBrowser();
     page = await browser.newPage();
+    // Las plantillas son HTML+CSS con imágenes embebidas: la página no
+    // necesita JavaScript ni red. Bloquearlos impide que un texto con HTML
+    // colado pueda ejecutar código o pedir URLs internas del servidor.
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on('request', (request) => {
+      const url = request.url();
+      if (url.startsWith('data:') || url === 'about:blank') request.continue();
+      else request.abort();
+    });
     await page.setContent(htmlFinal, { waitUntil: 'load' });
-    const buffer = await page.pdf({ format: 'letter', printBackground: true });
-    return buffer;
+    // puppeteer devuelve un Uint8Array: Express lo serializaría como JSON y
+    // archiver no lo acepta. Se entrega siempre como Buffer.
+    return Buffer.from(await page.pdf({ format: 'letter', printBackground: true }));
   } finally {
     if (page) {
       await page.close().catch(() => {});
     }
+    liberarPagina();
+    activeRenders--;
+    if (activeRenders === 0) scheduleIdleClose();
   }
 }
 
@@ -174,17 +269,21 @@ export async function renderBulkReportZip(gradeId, anio, institucionId, res) {
   const archive = new ZipArchive({ zlib: { level: 6 } });
 
   archive.on('error', (err) => {
-    // Si el archiver falla, intenta terminar la respuesta con error.
+    // Un throw aquí sería una excepción no capturada que tumba el proceso:
+    // se registra y se corta solo esta respuesta.
+    console.error('[BulkReport] Error al construir el ZIP:', err.message);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Error al construir el archivo ZIP.' });
+    } else {
+      res.destroy(err);
     }
-    throw err;
   });
 
   // Escribir headers antes de empezar a hacer pipe (headersSent = true desde aquí).
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
-  res.setHeader('Transfer-Encoding', 'chunked');
+  // Sin Content-Length, Node envía la respuesta por trozos (chunked) solo; fijar
+  // Transfer-Encoding a mano rompía la respuesta de error (llevaba ambos).
 
   archive.pipe(res);
 

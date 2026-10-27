@@ -22,7 +22,12 @@ export async function getReportPDF(req, res, next) {
     if (!anio) {
       return res.status(400).json({ error: 'Falta anio.' });
     }
-    const institucionId = req.user?.institucion_id;
+    // Misma regla que el boletín en JSON: solo el admin de la institución.
+    // renderReportPDF ya valida que el estudiante sea de su institución.
+    if (req.user?.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo el administrador de la institución puede generar boletines.' });
+    }
+    const institucionId = req.user.institucion_id;
     const buffer = await reportPdfService.renderReportPDF(studentId, anio, institucionId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="boletin_${anio}.pdf"`);

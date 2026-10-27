@@ -53,10 +53,10 @@ export async function update(resource, id, data) {
 
   const cols = Object.keys(data);
   if (cols.length === 0) {
-    // Sin columnas que actualizar se devuelve la fila tal cual está.
-    // OJO: esta rama no sanea la fila; ver «defecto conocido» en tests/suites/crud.js.
+    // Sin columnas que actualizar se devuelve la fila tal cual está, saneada
+    // como cualquier otra respuesta (nunca la contraseña).
     const { rows } = await pool.query(`SELECT * FROM ${quote(resource)} WHERE id = $1`, [id]);
-    return rows[0];
+    return sanitizeRow(resource, rows[0]);
   }
 
   const values = Object.values(data);
@@ -136,6 +136,15 @@ export async function hasAssignment(teacherId, subjectId, gradeId) {
   const { rows } = await pool.query(
     'SELECT 1 FROM assignments WHERE "profesor_id" = $1 AND "materia_id" = $2 AND "grado_id" = $3',
     [teacherId, subjectId, gradeId]
+  );
+  return rows.length > 0;
+}
+
+/** ¿El profesor tiene alguna asignación (cualquier materia) en el grado? */
+export async function hasAssignmentInGrade(teacherId, gradeId) {
+  const { rows } = await pool.query(
+    'SELECT 1 FROM assignments WHERE "profesor_id" = $1 AND "grado_id" = $2 LIMIT 1',
+    [teacherId, gradeId]
   );
   return rows.length > 0;
 }

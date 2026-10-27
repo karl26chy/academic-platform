@@ -28,3 +28,12 @@ export async function upsertObservation(estudianteId, periodoId, texto, updatedB
   );
   return rows[0];
 }
+
+/** Matrícula (grado) de un estudiante, si la tiene. */
+export async function enrollmentOf(estudianteId) {
+  const { rows } = await pool.query(
+    `SELECT grado_id FROM student_grades WHERE estudiante_id = $1 LIMIT 1`,
+    [estudianteId]
+  );
+  return rows[0] || null;
+}

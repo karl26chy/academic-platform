@@ -16,6 +16,17 @@ export function errorHandler(err, req, res, next) {
     return res.status(err.status).json({ error: err.message });
   }
 
+  // Errores al leer el cuerpo (express.json): son del cliente, no del servidor.
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'La petición es demasiado grande.' });
+  }
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'El cuerpo de la petición no es JSON válido.' });
+  }
+  if (err.expose && err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({ error: 'Petición inválida.' });
+  }
+
   const conocido = POSTGRES_ERRORS[err.code];
   if (conocido) {
     return res.status(conocido.status).json({ error: conocido.message });
