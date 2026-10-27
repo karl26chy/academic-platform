@@ -72,13 +72,26 @@ export async function marksOfStudentPeriod(studentId, periodId) {
   return rows;
 }
 
-/** Asistencias de un estudiante dentro de un período. */
-export async function attendanceOfStudentPeriod(studentId, periodId) {
+/** Logros de varias asignaciones en varios períodos, en una sola consulta. */
+export async function achievementsOf(assignmentIds, periodIds) {
+  if (assignmentIds.length === 0 || periodIds.length === 0) return [];
   const { rows } = await pool.query(
-    `SELECT id, estudiante_id, materia_id, grado_id, fecha, estado, periodo_id, registrado_por
-     FROM attendance
-     WHERE "estudiante_id" = $1 AND "periodo_id" = $2`,
-    [studentId, periodId]
+    `SELECT assignment_id, periodo_id, texto
+     FROM subject_achievements
+     WHERE assignment_id = ANY($1) AND periodo_id = ANY($2)`,
+    [assignmentIds, periodIds]
+  );
+  return rows;
+}
+
+/** Observaciones de un estudiante en varios períodos, en una sola consulta. */
+export async function observationsOf(studentId, periodIds) {
+  if (periodIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT periodo_id, texto
+     FROM student_observations
+     WHERE estudiante_id = $1 AND periodo_id = ANY($2)`,
+    [studentId, periodIds]
   );
   return rows;
 }

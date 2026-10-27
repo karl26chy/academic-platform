@@ -81,7 +81,7 @@ export default async function reportsSuite(world) {
     track(world, 'academic_periods', period.id);
 
     const adminToken = (await login(admin.email, world.password)).token;
-    return { inst, grade, subject, admin, adminToken, teacher, student, student2, period };
+    return { inst, grade, subject, assignment, admin, adminToken, teacher, student, student2, period };
   }
 
   /** Crea evaluación + nota para un estudiante en el período del contexto. */
@@ -398,9 +398,9 @@ export default async function reportsSuite(world) {
 
     // Un tercer estudiante se matricula en un grado nuevo con otra materia.
     const otro = (await post('/users', {
-      email: `otro.${seq}@test.local`, password: world.password, rol: 'student',
+      email: `otro.${world.id}.${seq}@test.local`, password: world.password, rol: 'student',
       nombre: 'Otro', apellido: 'Estudiante', institucion_id: ctx.inst.id,
-      tipo_documento: 'TI', identificacion: `IDX${seq++}`, activo: true,
+      tipo_documento: 'TI', identificacion: `IDX${world.id}-${seq++}`, activo: true,
     }, su)).data;
     track(world, 'users', otro.id);
     const grade2 = (await post('/grades', { institucion_id: ctx.inst.id, nombre: 'G2', tipo_grado: 'B' }, su)).data;
@@ -445,6 +445,35 @@ export default async function reportsSuite(world) {
     const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     equal(res.subjects[0].porPeriodo[0].fallas, null, 'sin registros → null (no 0)');
     equal(res.subjects[0].porPeriodo[0].justificadas, null, 'sin registros → null');
+  });
+
+  await test('logros y observaciones: se toma el período más reciente con texto', async () => {
+    const ctx = await mkInstitution(5, 3);
+    await addMark(ctx, ctx.student.id, 4.0);
+    const { subject: sinLogro } = await addSubjectWithMark(ctx, 3.5, `Sin logro ${seq}`);
+
+    const logro = (p, texto) =>
+      put(`/assignments/${ctx.assignment.id}/achievements?periodo_id=${p.id}`, { texto }, ctx.adminToken);
+    const observacion = (studentId, p, texto) =>
+      put(`/students/${studentId}/observations?periodo_id=${p.id}`, { texto }, ctx.adminToken);
+
+    equal((await logro(ctx.period, 'Logro P1')).status, 200, 'logro P1 guardado');
+    equal((await observacion(ctx.student.id, ctx.period, 'Obs P1')).status, 200, 'observación P1 guardada');
+    equal((await observacion(ctx.student2.id, ctx.period, 'Obs del otro')).status, 200, 'observación de otro estudiante');
+
+    const p2 = await mkClosedPeriod(ctx, 2, 'Segundo periodo');
+    await openPeriod(ctx, p2);
+    equal((await logro(p2, 'Logro P2')).status, 200, 'logro P2 guardado');
+
+    const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    const principal = res.subjects.find(s => s.materia_id === ctx.subject.id);
+    const otra = res.subjects.find(s => s.materia_id === sinLogro.id);
+    equal(principal.logros, 'Logro P2', 'logro del período más reciente con texto');
+    equal(otra.logros, null, 'materia sin logro → null');
+    equal(res.observaciones, 'Obs P1', 'observación propia más reciente (P2 no tiene)');
+
+    const res2 = (await get(`/students/${ctx.student2.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(res2.observaciones, 'Obs del otro', 'cada estudiante ve solo su observación');
   });
 
   await test('reporte anual: autorización y aislamiento', async () => {

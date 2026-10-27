@@ -1,7 +1,6 @@
 import { HttpError } from '../shared/http-error.js';
 import { periodById, findRaw } from '../repositories/resource.repository.js';
 import * as repo from '../repositories/report.repository.js';
-import pool from '../db/pool.js';
 
 /**
  * Reporte académico.
@@ -95,8 +94,11 @@ function buildInstitutionBlock(institution, config) {
  * Datos de UN período. Devuelve el reporte por período y, además, un mapa
  * interno materia_id → { promedio, desempeno, fallas, justificadas, hasMarks }
  * para la agregación anual.
+ *
+ * `assignments` (asignaciones del grado) puede venir ya cargado: el reporte
+ * anual lo consulta una sola vez para sus cuatro períodos.
  */
-async function buildPeriodData(student, period, institution, grade) {
+async function buildPeriodData(student, period, institution, grade, assignments = null) {
   const escalaMaxima = escalaDe(institution);
   const notaMinima = notaMinimaDe(institution, escalaMaxima);
 
@@ -105,7 +107,7 @@ async function buildPeriodData(student, period, institution, grade) {
 
   if (period.virtual) {
     if (grade) {
-      const assignments = await repo.assignmentsOfGrade(grade.id);
+      assignments = assignments ?? await repo.assignmentsOfGrade(grade.id);
       for (const assign of assignments) {
         const subject = {
           materia_id: assign.materia_id,
@@ -156,14 +158,17 @@ async function buildPeriodData(student, period, institution, grade) {
   }
 
   let allMarks = [];
-  let attendanceRows = [];
   let attendanceBySubject = {};
 
   if (grade) {
-    const assignments = await repo.assignmentsOfGrade(grade.id);
-    allMarks = await repo.marksOfStudentPeriod(student.id, period.id);
-    const allEvals = await repo.evaluationsOfPeriod(institution.id, grade.id, period.id);
-    attendanceBySubject = await repo.attendanceCountsBySubject(student.id, period.id);
+    // Consultas independientes entre sí: se lanzan a la vez.
+    let allEvals;
+    [assignments, allMarks, allEvals, attendanceBySubject] = await Promise.all([
+      assignments ?? repo.assignmentsOfGrade(grade.id),
+      repo.marksOfStudentPeriod(student.id, period.id),
+      repo.evaluationsOfPeriod(institution.id, grade.id, period.id),
+      repo.attendanceCountsBySubject(student.id, period.id),
+    ]);
 
     for (const assign of assignments) {
       const evals = allEvals.filter(e => e.materia_id === assign.materia_id);
@@ -206,9 +211,6 @@ async function buildPeriodData(student, period, institution, grade) {
   } else {
     allMarks = await repo.marksOfStudentPeriod(student.id, period.id);
   }
-
-  attendanceRows = await repo.attendanceOfStudentPeriod(student.id, period.id);
-  if (attendanceRows.length === 0) attendanceRows = null; // solo para no iterar de más
 
   const presente = Object.values(attendanceBySubject).reduce((s, v) => s + v.presente, 0);
   const ausente = Object.values(attendanceBySubject).reduce((s, v) => s + v.ausente, 0);
@@ -266,9 +268,11 @@ export async function getReport(user, studentId, periodId) {
     throw new HttpError(404, 'Período académico no encontrado.');
   }
 
-  const institution = await findRaw('institutions', user.institucion_id);
-  const config = await repo.reportConfigFor(user.institucion_id);
-  const grade = await repo.gradeOfStudent(studentId);
+  const [institution, config, grade] = await Promise.all([
+    findRaw('institutions', user.institucion_id),
+    repo.reportConfigFor(user.institucion_id),
+    repo.gradeOfStudent(studentId),
+  ]);
 
   const { report } = await buildPeriodData(student, period, institution, grade);
   report.institution = buildInstitutionBlock(institution, config);
@@ -287,10 +291,14 @@ export async function getYearReport(user, studentId, anio) {
     throw new HttpError(404, 'Estudiante no encontrado.');
   }
 
-  const institution = await findRaw('institutions', user.institucion_id);
-  const config = await repo.reportConfigFor(user.institucion_id);
-  const grade = await repo.gradeOfStudent(studentId);
-  const dbPeriods = await repo.periodsOfYear(user.institucion_id, anio);
+  const [institution, config, grade, dbPeriods] = await Promise.all([
+    findRaw('institutions', user.institucion_id),
+    repo.reportConfigFor(user.institucion_id),
+    repo.gradeOfStudent(studentId),
+    repo.periodsOfYear(user.institucion_id, anio),
+  ]);
+  // Las asignaciones del grado son las mismas en los cuatro períodos.
+  const assignments = grade ? await repo.assignmentsOfGrade(grade.id) : [];
   const periods = [1, 2, 3, 4].map(num => {
     const found = dbPeriods.find(p => Number(p.numero) === num);
     if (found) return found;
@@ -306,15 +314,17 @@ export async function getYearReport(user, studentId, anio) {
     };
   });
 
-  const periodsData = [];
   const perPeriodBySubject = {}; // materia_id → array de { periodIndex, valoracion, desempeno }
 
-  for (const period of periods) {
-    const { report, bySubject } = await buildPeriodData(student, period, institution, grade);
-    periodsData.push(report);
+  // Los períodos son independientes: se construyen a la vez (el orden se conserva).
+  const built = await Promise.all(
+    periods.map(period => buildPeriodData(student, period, institution, grade, assignments))
+  );
+  const periodsData = built.map(b => b.report);
+  for (const [index, { bySubject }] of built.entries()) {
     for (const [materiaId, info] of Object.entries(bySubject)) {
       (perPeriodBySubject[materiaId] = perPeriodBySubject[materiaId] || []).push({
-        index: periodsData.length - 1,
+        index,
         valoracion: info.promedio,
         desempeno: info.desempeno,
         fallas: info.fallas,
@@ -335,68 +345,66 @@ export async function getYearReport(user, studentId, anio) {
     }
   }
 
-  // Logros: por assignment (materia+grado) y período más reciente con texto
-  // Mapa assignment por materia_id para este grado
+  // Logros: por assignment (materia+grado) y período más reciente con texto.
   const assignmentByMateria = {};
-  if (grade) {
-    const { rows: assignRows } = await pool.query(
-      `SELECT id, materia_id FROM assignments WHERE grado_id = $1`,
-      [grade.id]
-    );
-    for (const a of assignRows) assignmentByMateria[a.materia_id] = a.id;
-  }
+  for (const a of assignments) assignmentByMateria[a.materia_id] = a.id;
 
-  const subjects = await Promise.all(
-    Object.keys(subjectMeta).map(async materiaId => {
-      const porPeriodo = periods.map((period, i) => {
-        const dato = (perPeriodBySubject[materiaId] || []).find(d => d.index === i);
-        return {
-          period_id: period.id,
-          numero: period.numero,
-          valoracion: dato ? dato.valoracion : null,
-          desempeno: dato ? dato.desempeno : null,
-          fallas: dato ? dato.fallas : null,
-          justificadas: dato ? dato.justificadas : null,
-        };
-      });
-      const valoraciones = porPeriodo.map(p => p.valoracion).filter(v => v !== null && v !== undefined);
-      const definitiva = valoraciones.length > 0
-        ? Number((valoraciones.reduce((a, b) => a + b, 0) / valoraciones.length).toFixed(2))
-        : null;
-      const estado =
-        definitiva === null
-          ? 'Sin notas'
-          : definitiva >= notaMinima
-            ? 'Aprobado'
-            : 'Reprobado';
+  // Más reciente primero. Logros y observaciones se traen en una sola consulta
+  // cada uno y aquí se elige el primer período que tenga texto.
+  const periodsDesc = [...periods].sort((a, b) => Number(b.numero) - Number(a.numero));
+  const periodIds = periods.map(p => p.id);
+  const [achievementRows, observationRows] = await Promise.all([
+    repo.achievementsOf(Object.values(assignmentByMateria), periodIds),
+    repo.observationsOf(studentId, periodIds),
+  ]);
+  const textoMasReciente = (rows, filtro) => {
+    for (const p of periodsDesc) {
+      const txt = rows.find(r => r.periodo_id === p.id && filtro(r))?.texto?.trim();
+      if (txt) return txt;
+    }
+    return null;
+  };
 
-      // Logro más reciente (mayor numero) con texto
-      let logros = null;
-      const assignmentId = assignmentByMateria[materiaId];
-      if (assignmentId) {
-        const periodsDesc = [...periods].sort((a, b) => Number(b.numero) - Number(a.numero));
-        for (const p of periodsDesc) {
-          const { rows } = await pool.query(
-            `SELECT texto FROM subject_achievements WHERE assignment_id = $1 AND periodo_id = $2`,
-            [assignmentId, p.id]
-          );
-          const txt = rows[0]?.texto?.trim();
-          if (txt) { logros = txt; break; }
-        }
-      }
-
+  const subjects = Object.keys(subjectMeta).map(materiaId => {
+    const porPeriodo = periods.map((period, i) => {
+      const dato = (perPeriodBySubject[materiaId] || []).find(d => d.index === i);
       return {
-        materia_id: materiaId,
-        materia: subjectMeta[materiaId].materia,
-        docente: subjectMeta[materiaId].docente,
-        porPeriodo,
-        definitiva,
-        desempenoDefinitiva: desempeno(definitiva, escalaMaxima),
-        estado,
-        logros,
+        period_id: period.id,
+        numero: period.numero,
+        valoracion: dato ? dato.valoracion : null,
+        desempeno: dato ? dato.desempeno : null,
+        fallas: dato ? dato.fallas : null,
+        justificadas: dato ? dato.justificadas : null,
       };
-    })
-  );
+    });
+    const valoraciones = porPeriodo.map(p => p.valoracion).filter(v => v !== null && v !== undefined);
+    const definitiva = valoraciones.length > 0
+      ? Number((valoraciones.reduce((a, b) => a + b, 0) / valoraciones.length).toFixed(2))
+      : null;
+    const estado =
+      definitiva === null
+        ? 'Sin notas'
+        : definitiva >= notaMinima
+          ? 'Aprobado'
+          : 'Reprobado';
+
+    // Logro más reciente (mayor numero) con texto
+    const assignmentId = assignmentByMateria[materiaId];
+    const logros = assignmentId
+      ? textoMasReciente(achievementRows, r => r.assignment_id === assignmentId)
+      : null;
+
+    return {
+      materia_id: materiaId,
+      materia: subjectMeta[materiaId].materia,
+      docente: subjectMeta[materiaId].docente,
+      porPeriodo,
+      definitiva,
+      desempenoDefinitiva: desempeno(definitiva, escalaMaxima),
+      estado,
+      logros,
+    };
+  });
 
   // Asistencia anual: suma de los períodos.
   const attendance = periodsData.reduce(
@@ -420,18 +428,7 @@ export async function getYearReport(user, studentId, anio) {
       : null;
 
   // Observación más reciente del estudiante con texto
-  let observaciones = '';
-  {
-    const periodsDesc = [...periods].sort((a, b) => Number(b.numero) - Number(a.numero));
-    for (const p of periodsDesc) {
-      const { rows } = await pool.query(
-        `SELECT texto FROM student_observations WHERE estudiante_id = $1 AND periodo_id = $2`,
-        [studentId, p.id]
-      );
-      const txt = rows[0]?.texto?.trim();
-      if (txt) { observaciones = txt; break; }
-    }
-  }
+  const observaciones = textoMasReciente(observationRows, () => true) ?? '';
 
   return {
     student: buildStudentBlock(student),
