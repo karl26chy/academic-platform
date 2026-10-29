@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, GraduationCap, Key, Mail } from 'lucide-react';
+import { Eye, EyeOff, Key, User } from 'lucide-react';
 import { useApp } from '../../context/useApp';
 
+/**
+ * Login de Kamak: la imagen de la marca ocupa toda la pantalla y el
+ * formulario va en un cuadro translúcido (efecto vidrio).
+ *
+ *  · Pantalla vertical (celular, tablet de pie): imagen vertical y el cuadro
+ *    en el centro exacto; el nombre queda visible arriba.
+ *  · Pantalla horizontal: imagen panorámica. Desde 1024 px el cuadro va a
+ *    la derecha, fuera de la nube con el nombre (43 %–66 % del ancho de la
+ *    imagen); si la pantalla es menos panorámica que la imagen, el recorte
+ *    se hace por la izquierda para no tapar el nombre.
+ *
+ * Se elige por orientación y no solo por ancho: una tablet de pie usa la
+ * imagen vertical aunque mida 1024 px.
+ *
+ * Colores tomados de la imagen: verde bosque del logotipo para el botón y
+ * los textos, vidrio cálido para el cuadro.
+ */
+
 const FIELD =
-  'block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-q10-500/50 focus:border-q10-500 transition-colors';
+  'block w-full pl-10 pr-3 py-3 bg-white/70 border border-white/70 rounded-xl text-[#1f332d] placeholder-[#5c6f68] focus:outline-none focus:ring-2 focus:ring-[#2f4f47]/40 focus:border-[#2f4f47]/60 focus:bg-white/85 transition-colors';
 
 export const Login: React.FC = () => {
   const { login, authError } = useApp();
@@ -21,60 +39,47 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-q10-900 via-q10-800 to-q10-950">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="flex justify-center">
-          <div className="p-3 bg-q10-50 border border-q10-200 rounded-2xl text-q10-600">
-            <GraduationCap className="h-12 w-12" />
-          </div>
-        </div>
-        <h2 className="mt-6 text-3xl font-extrabold text-gray-900 tracking-tight">
-          Plataforma Educativa
-        </h2>
-        <p className="mt-2 text-sm text-gray-500">
-          Inicia sesión para acceder a tu panel institucional
-        </p>
-      </div>
+    <div className="relative min-h-dvh bg-[#e9dcc8] bg-cover bg-[position:center_15%] bg-[url('/kamak-fondo-movil.webp')] landscape:bg-[url('/kamak-fondo.webp')] landscape:bg-[position:56%_center] lg:landscape:bg-[position:85%_center]">
+      {/* En pantalla grande, leve sombra a la derecha para que el cuadro se lea sobre la imagen. */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:landscape:block bg-gradient-to-l from-black/20 via-black/5 to-transparent" />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white border border-gray-200 rounded-2xl py-8 px-4 shadow-sm sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <main className="relative min-h-dvh flex items-center justify-center px-4 py-8 lg:landscape:justify-end lg:landscape:pr-[3.5vw]">
+        <div className="w-full max-w-sm lg:landscape:max-w-[23rem] xl:landscape:max-w-[24rem] bg-white/30 backdrop-blur-xl backdrop-saturate-150 border border-white/50 rounded-3xl shadow-[0_20px_60px_-15px_rgba(31,51,45,0.45)] px-6 py-8 sm:px-9 sm:py-10">
+          <form className="space-y-5" onSubmit={handleSubmit}>
             {authError && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-sm text-red-600">
+              <div role="alert" className="bg-red-50/90 border border-red-200 p-3.5 rounded-xl text-sm text-red-700">
                 {authError}
               </div>
             )}
 
             <div>
-              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-                Correo o Identificación
+              <label htmlFor="identifier" className="block text-sm font-semibold text-[#1f332d]">
+                Usuario
               </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <Mail className="h-5 w-5" />
+              <div className="mt-1.5 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#3d5a50]">
+                  <User className="h-5 w-5" />
                 </div>
                 <input
-                  id="identifier" name="identifier" type="text" required
+                  id="identifier" name="identifier" type="text" required autoComplete="username"
                   value={identifier} onChange={e => setIdentifier(e.target.value)}
                   className={FIELD}
-                  placeholder="correo@plataforma.com o número de identificación"
+                  placeholder="Correo o número de identificación"
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-400">
-                Los estudiantes inician sesión con su número de identificación.
-              </p>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-semibold text-[#1f332d]">
                 Contraseña
               </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <div className="mt-1.5 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#3d5a50]">
                   <Key className="h-5 w-5" />
                 </div>
                 <input
                   id="password" name="password" type={showPassword ? 'text' : 'password'} required
+                  autoComplete="current-password"
                   value={password} onChange={e => setPassword(e.target.value)}
                   className={`${FIELD} pr-10`}
                   placeholder="••••••••"
@@ -82,25 +87,24 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#3d5a50] hover:text-[#1f332d] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-q10-600 hover:bg-q10-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-q10-500 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Iniciando sesión...' : 'Ingresar a la Plataforma'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-semibold text-white bg-[#2f4f47] hover:bg-[#24403a] shadow-md shadow-[#1f332d]/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white/40 focus:ring-[#2f4f47] transition-colors disabled:opacity-60"
+            >
+              {loading ? 'Ingresando…' : 'Ingresar'}
+            </button>
           </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
