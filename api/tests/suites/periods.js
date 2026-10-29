@@ -358,11 +358,12 @@ export default async function periodsSuite(world) {
         institucion_id: instA.id, nombre: 'Periodo 1', numero: 22, anio: 2021, activo: false,
       }, adminA),
       409,
-      'No se puede cambiar el año o el número de un período que ya tiene evaluaciones, notas o asistencia.'
+      'No se puede cambiar el año de un período que ya tiene evaluaciones, notas o asistencia.'
     );
   });
 
-  await test('no se puede cambiar el número de un período con notas (409)', async () => {
+  await test('se puede cambiar el número de un período con evaluaciones y notas, y lo siguen', async () => {
+    // Caso real: se creó como período 3 pero las notas eran del 4.
     const per = (await mkPeriod(instA.id, adminA, { anio: 2021, numero: 24, activo: true })).data;
     track(world, 'academic_periods', per.id);
     const ev = (await post('/evaluations', baseEval({ periodo_id: per.id }), teacherA)).data;
@@ -370,13 +371,19 @@ export default async function periodsSuite(world) {
     const mark = (await post('/marks', baseMark({ evaluacion_id: ev.id }), teacherA)).data;
     track(world, 'marks', mark.id);
 
-    expectError(
-      await put(`/academic_periods/${per.id}`, {
-        institucion_id: instA.id, nombre: 'Periodo 1', numero: 25, anio: 2021, activo: false,
-      }, adminA),
-      409,
-      'No se puede cambiar el año o el número de un período que ya tiene evaluaciones, notas o asistencia.'
-    );
+    const res = await put(`/academic_periods/${per.id}`, {
+      institucion_id: instA.id, nombre: 'Periodo 1', numero: 25, anio: 2021,
+      fecha_inicio: '2021-09-01', fecha_fin: '2021-11-30', activo: true,
+    }, adminA);
+    equal(res.status, 200, 'status');
+    equal(res.data.numero, 25, 'número actualizado');
+    equal(res.data.fecha_inicio, '2021-09-01', 'fecha de inicio actualizada');
+
+    const notaDespues = (await get(`/marks/${mark.id}`, world.tokens.super)).data;
+    equal(notaDespues.periodo_id, per.id, 'la nota sigue en el mismo período');
+    equal(Number(notaDespues.nota), Number(mark.nota), 'la nota no cambió');
+    const evalDespues = (await get(`/evaluations/${ev.id}`, world.tokens.super)).data;
+    equal(evalDespues.periodo_id, per.id, 'la evaluación sigue en el mismo período');
   });
 
   await test('cambiar año y número de un período SIN datos es válido', async () => {

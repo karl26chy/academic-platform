@@ -17,8 +17,10 @@ const ANIO_MAX = 2100;
  *  · fecha_inicio anterior a fecha_fin;
  *  · no pueden existir dos períodos con la misma institución + año + número;
  *  · protección del historial: un período con evaluaciones, notas o asistencia
- *    no puede cambiar su año ni su número. El nombre y las fechas siguen
- *    siendo editables; abrir/cerrar (activo) también.
+ *    no puede cambiar su año. El número sí: las notas y la asistencia se
+ *    ligan al período por su id, así que lo siguen al renumerarlo (p. ej. un
+ *    período creado como 3 que en realidad era el 4). El nombre, las fechas
+ *    y abrir/cerrar (activo) también siguen siendo editables.
  */
 export async function validatePeriod(data, existingRow) {
   const institucionId = data.institucion_id ?? existingRow?.institucion_id;
@@ -68,14 +70,12 @@ export async function validatePeriod(data, existingRow) {
 
   if (existingRow) {
     const cambiaAnio = data.anio !== undefined && Number(data.anio) !== Number(existingRow.anio);
-    const cambiaNumero =
-      data.numero !== undefined && Number(data.numero) !== Number(existingRow.numero);
-    if (cambiaAnio || cambiaNumero) {
+    if (cambiaAnio) {
       const deps = await countPeriodDependencies(existingRow.id);
       if (deps.evaluaciones + deps.notas + deps.asistencias > 0) {
         throw new HttpError(
           409,
-          'No se puede cambiar el año o el número de un período que ya tiene evaluaciones, notas o asistencia.'
+          'No se puede cambiar el año de un período que ya tiene evaluaciones, notas o asistencia.'
         );
       }
     }

@@ -438,16 +438,20 @@ export async function openPeriodsOfInstitution(institucionId) {
 
 /**
  * Abre un periodo y cierra los demás de la misma institución, de forma
- * transaccional. Devuelve null si el periodo no existe o no pertenece a la
- * institución indicada.
+ * transaccional. `changes` son los demás campos editados a la vez (número,
+ * nombre, fechas…): se guardan en la misma actualización; antes se perdían
+ * al editar un periodo abierto. Devuelve null si el periodo no existe o no
+ * pertenece a la institución indicada.
  */
-export async function setPeriodOpen(periodId, institucionId) {
+export async function setPeriodOpen(periodId, institucionId, changes = {}) {
+  const cols = Object.keys(changes).filter(c => !['id', 'activo', 'institucion_id'].includes(c));
+  const sets = ['activo = true', ...cols.map((c, i) => `${quote(c)} = $${i + 3}`)];
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
-      `UPDATE academic_periods SET activo = true WHERE id = $1 AND "institucion_id" = $2 RETURNING *`,
-      [periodId, institucionId]
+      `UPDATE academic_periods SET ${sets.join(', ')} WHERE id = $1 AND "institucion_id" = $2 RETURNING *`,
+      [periodId, institucionId, ...cols.map(c => changes[c])]
     );
     if (rows.length === 0) {
       await client.query('ROLLBACK');

@@ -79,8 +79,9 @@ export async function replace(resource, id, body, user) {
   ensureYear(resource, data);
 
   if (resource === 'academic_periods' && data.activo === true) {
-    // Abrir un periodo cierra los demás de la institución, transaccionalmente.
-    const row = await repo.setPeriodOpen(id, existing.institucion_id);
+    // Abrir un periodo cierra los demás de la institución, transaccionalmente;
+    // el resto de campos editados se guarda en la misma operación.
+    const row = await repo.setPeriodOpen(id, existing.institucion_id, data);
     if (!row) throw notFound();
     return row;
   }
