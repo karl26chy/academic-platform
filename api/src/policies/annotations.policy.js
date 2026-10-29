@@ -16,12 +16,17 @@ const denegar = (mensaje = 'No autorizado.') => {
   throw new HttpError(403, mensaje);
 };
 
-/** Logros de una asignación. */
-export function authorizeAchievement(user, assignment) {
+/** Datos de una asignación (clase): su docente, el admin de la institución o super admin. */
+export function authorizeAssignment(user, assignment, mensaje = 'No autorizado para esta clase.') {
   if (user.rol === 'super_admin') return;
   if (user.rol === 'admin' && user.institucion_id === assignment.institucion_id) return;
   if (user.rol === 'teacher' && user.sub === assignment.profesor_id) return;
-  denegar('No autorizado para este logro.');
+  denegar(mensaje);
+}
+
+/** Logros de una asignación. */
+export function authorizeAchievement(user, assignment) {
+  authorizeAssignment(user, assignment, 'No autorizado para este logro.');
 }
 
 /**

@@ -5,6 +5,7 @@ import reportRoutes from './report.routes.js';
 import reportConfigRoutes from './report-config.routes.js';
 import reportTemplatesRoutes from './report-templates.routes.js';
 import achievementRoutes from './achievement.routes.js';
+import periodFinalGradesRoutes from './period-final-grades.routes.js';
 import observationRoutes from './observation.routes.js';
 import resourceRoutes from './resource.routes.js';
 
@@ -22,6 +23,7 @@ router.use('/', reportRoutes);
 router.use('/', reportConfigRoutes);
 router.use('/', reportTemplatesRoutes);
 router.use('/', achievementRoutes);
+router.use('/', periodFinalGradesRoutes);
 router.use('/', observationRoutes);
 router.use('/', resourceRoutes);
 

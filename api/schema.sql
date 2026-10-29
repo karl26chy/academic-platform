@@ -270,3 +270,20 @@ CREATE TABLE IF NOT EXISTS student_observations (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_student_observations_est_periodo
   ON student_observations(estudiante_id, periodo_id);
+
+-- Definitivas de periodo cargadas a mano ("Notas boletín"). TEMPORAL: para
+-- completar los periodos anteriores a la entrada en uso de la plataforma.
+-- La API también la crea sola al primer uso (period-final-grades.repository.js).
+CREATE TABLE IF NOT EXISTS period_final_grades (
+  id TEXT PRIMARY KEY,
+  estudiante_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  materia_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  grado_id TEXT NOT NULL REFERENCES grades(id) ON DELETE CASCADE,
+  anio INTEGER NOT NULL,
+  numero INTEGER NOT NULL CHECK (numero BETWEEN 1 AND 4),
+  nota NUMERIC(6,2) NOT NULL,
+  registrado_por TEXT,
+  updated_at TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_period_final_grades
+  ON period_final_grades (estudiante_id, materia_id, anio, numero);

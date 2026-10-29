@@ -1,6 +1,7 @@
 import { HttpError } from '../shared/http-error.js';
 import { periodById, findRaw } from '../repositories/resource.repository.js';
 import * as repo from '../repositories/report.repository.js';
+import * as finalGradesRepo from '../repositories/period-final-grades.repository.js';
 
 /**
  * Reporte académico.
@@ -342,6 +343,35 @@ export async function getYearReport(user, studentId, anio) {
   for (const report of periodsData) {
     for (const s of report.subjects) {
       subjectMeta[s.materia_id] = { materia: s.materia, docente: s.docente };
+    }
+  }
+
+  // "Notas boletín" (TEMPORAL): definitivas de periodos anteriores cargadas a
+  // mano. Ocupan la valoración de su periodo como si se hubiera calculado.
+  const definitivasCargadas = await finalGradesRepo.ofStudentYear(studentId, anio);
+  const cargadasPorPeriodo = {}; // índice de periodo → [notas]
+  for (const { materia_id, numero, nota } of definitivasCargadas) {
+    const index = periods.findIndex(p => Number(p.numero) === Number(numero));
+    if (index < 0 || !subjectMeta[materia_id]) continue;
+    const lista = (perPeriodBySubject[materia_id] = perPeriodBySubject[materia_id] || []);
+    const previo = lista.find(d => d.index === index);
+    const dato = {
+      index,
+      valoracion: nota,
+      desempeno: desempeno(nota, escalaMaxima),
+      fallas: previo?.fallas ?? null,
+      justificadas: previo?.justificadas ?? null,
+    };
+    if (previo) Object.assign(previo, dato);
+    else lista.push(dato);
+    (cargadasPorPeriodo[index] = cargadasPorPeriodo[index] || []).push(nota);
+  }
+  // Promedio del periodo para los periodos que solo tienen definitivas cargadas.
+  for (const [index, notas] of Object.entries(cargadasPorPeriodo)) {
+    const summary = periodsData[index].summary;
+    if (summary.promedioGeneral === null || summary.promedioGeneral === undefined) {
+      summary.promedioGeneral = Number((notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2));
+      summary.estadoGlobal = summary.promedioGeneral >= notaMinima ? 'Aprobado' : 'Reprobado';
     }
   }
 

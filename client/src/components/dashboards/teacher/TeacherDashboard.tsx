@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, AlertTriangle, CheckSquare, ClipboardList, Lock, Mail, Star, MessageSquare, BarChart2 } from 'lucide-react';
+import { Award, AlertTriangle, CheckSquare, ClipboardList, FileText, Lock, Mail, Star, MessageSquare, BarChart2 } from 'lucide-react';
 import { useApp } from '../../../context/useApp';
 import { useMessaging } from '../../../hooks/useMessaging';
 import { Card, EmptyMessage, Field, INPUT, Tabs, type TabItem } from '../../ui';
@@ -14,12 +14,14 @@ import { CitationsTab } from './CitationsTab';
 import { LogrosTab } from './LogrosTab';
 import { ObservacionesTab } from './ObservacionesTab';
 import { AcademicTrackingTab } from './AcademicTrackingTab';
+import { NotasBoletinTab } from './NotasBoletinTab';
 
 type TeacherTab =
   | 'attendance'
   | 'marks'
   | 'achievements'
   | 'observations'
+  | 'notasBoletin'
   | 'citations'
   | 'messages'
   | 'evaluations'
@@ -56,6 +58,8 @@ export const TeacherDashboard: React.FC = () => {
     { id: 'academicTracking', label: 'Seguimiento académico', icon: <BarChart2 className="h-4 w-4" /> },
     { id: 'achievements', label: 'Logros', icon: <Star className="h-4 w-4" /> },
     { id: 'observations', label: 'Observaciones', icon: <MessageSquare className="h-4 w-4" /> },
+    // TEMPORAL: definitivas de los periodos anteriores a la entrada en uso de la plataforma.
+    { id: 'notasBoletin', label: 'Notas boletín', icon: <FileText className="h-4 w-4" /> },
     { id: 'citations', label: 'Citaciones', icon: <AlertTriangle className="h-4 w-4" /> },
     { id: 'messages', label: 'Mensajería', icon: <Mail className="h-4 w-4" />, badge: messaging.unreadIncoming },
   ];
@@ -203,6 +207,16 @@ export const TeacherDashboard: React.FC = () => {
 
           {activeTab === 'observations' && (
             <ObservacionesTab students={gradeStudents} period={activePeriod} />
+          )}
+
+          {activeTab === 'notasBoletin' && (
+            <NotasBoletinTab
+              key={activeAssignment.id}
+              assignment={activeAssignment}
+              subject={activeSubject}
+              grade={activeGrade}
+              students={gradeStudents}
+            />
           )}
 
           {activeTab === 'citations' && (

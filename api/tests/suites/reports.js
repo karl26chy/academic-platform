@@ -577,6 +577,89 @@ export default async function reportsSuite(world) {
     equal(reportAfter.subjects[0].definitiva, null, 'el reporte ignora la nota huérfana preexistente');
   });
 
+  // ---- Notas boletín (TEMPORAL): definitivas de periodos anteriores ------------
+
+  suite('Notas boletín — definitivas de periodos anteriores');
+
+  /** Clase con el periodo 4 abierto y una nota normal en él (caso real). */
+  async function claseEnCuartoPeriodo() {
+    const ctx = await mkInstitution(5, 3);
+    const p4 = await mkClosedPeriod(ctx, 4, 'Periodo 4');
+    await openPeriod(ctx, p4);
+    await addMark(ctx, ctx.student.id, 4.0, 30, p4);
+    const teacherToken = (await login(ctx.teacher.email, world.password)).token;
+    const ruta = `/assignments/${ctx.assignment.id}/period-final-grades`;
+    return { ...ctx, p4, teacherToken, ruta };
+  }
+
+  await test('el docente carga P1–P3 y el boletín las muestra junto al P4 calculado', async () => {
+    const ctx = await claseEnCuartoPeriodo();
+    const res = await put(ctx.ruta, { notas: [
+      { estudiante_id: ctx.student.id, numero: 1, nota: 3.0 },
+      { estudiante_id: ctx.student.id, numero: 2, nota: 3.5 },
+      { estudiante_id: ctx.student.id, numero: 3, nota: 4.5 },
+    ] }, ctx.teacherToken);
+    equal(res.status, 200, 'guardado');
+    equal(res.data.anio, 2026, 'año en curso de la institución');
+    equal(res.data.notas.length, 3, 'tres definitivas guardadas');
+
+    const lectura = await get(ctx.ruta, ctx.teacherToken);
+    equal(lectura.data.habilitado, true, 'habilitado por defecto');
+    equal(lectura.data.notaMax, 5, 'escala de la institución');
+
+    const boletin = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    const materia = boletin.subjects.find(s => s.materia_id === ctx.subject.id);
+    equal(materia.porPeriodo.map(p => p.valoracion).join(','), '3,3.5,4.5,4', 'P1–P3 cargadas + P4 calculado');
+    equal(materia.definitiva, 3.75, 'definitiva anual = promedio de los 4 periodos');
+    equal(materia.porPeriodo[2].desempeno, 'A', 'desempeño de la definitiva cargada (4.5 → A)');
+    equal(boletin.summary.promediosPeriodo[0], 3, 'promedio del periodo 1');
+
+    // El otro estudiante no tiene definitivas: sus periodos 1–3 siguen vacíos.
+    const otro = (await get(`/students/${ctx.student2.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(otro.subjects[0].porPeriodo[0].valoracion, null, 'sin definitiva cargada → vacío');
+  });
+
+  await test('editar o borrar una definitiva cargada (nota vacía la borra)', async () => {
+    const ctx = await claseEnCuartoPeriodo();
+    await put(ctx.ruta, { notas: [{ estudiante_id: ctx.student.id, numero: 1, nota: 3.0 }] }, ctx.teacherToken);
+    await put(ctx.ruta, { notas: [{ estudiante_id: ctx.student.id, numero: 1, nota: 4.2 }] }, ctx.teacherToken);
+    let boletin = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(boletin.subjects[0].porPeriodo[0].valoracion, 4.2, 'se actualiza, no se duplica');
+
+    const borrado = await put(ctx.ruta, { notas: [{ estudiante_id: ctx.student.id, numero: 1, nota: '' }] }, ctx.teacherToken);
+    equal(borrado.data.notas.length, 0, 'borrada');
+    boletin = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(boletin.subjects[0].porPeriodo[0].valoracion, null, 'el periodo vuelve a quedar vacío');
+  });
+
+  await test('validaciones: solo periodos 1–3, nota en la escala y estudiantes del grado', async () => {
+    const ctx = await claseEnCuartoPeriodo();
+    const enviar = (item) => put(ctx.ruta, { notas: [item] }, ctx.teacherToken);
+    expectError(await enviar({ estudiante_id: ctx.student.id, numero: 4, nota: 3 }), 400, 'Solo se pueden cargar los periodos 1, 2, 3.');
+    expectError(await enviar({ estudiante_id: ctx.student.id, numero: 1, nota: 5.5 }), 400, 'Las notas deben estar entre 0 y 5.');
+    expectError(await enviar({ estudiante_id: ctx.student.id, numero: 1, nota: 'abc' }), 400, 'Las notas deben estar entre 0 y 5.');
+    expectError(await enviar({ estudiante_id: world.users.studentA.id, numero: 1, nota: 3 }), 400, 'Hay un estudiante que no está matriculado en este grado.');
+    expectError(await put(ctx.ruta, { notas: [] }, ctx.teacherToken), 400, 'No hay notas para guardar.');
+
+    // Todo o nada: un item inválido impide guardar los válidos.
+    await put(ctx.ruta, { notas: [
+      { estudiante_id: ctx.student.id, numero: 1, nota: 3 },
+      { estudiante_id: ctx.student.id, numero: 2, nota: 99 },
+    ] }, ctx.teacherToken);
+    equal((await get(ctx.ruta, ctx.teacherToken)).data.notas.length, 0, 'no se guardó nada');
+  });
+
+  await test('permisos: solo el docente de la clase y su admin', async () => {
+    const ctx = await claseEnCuartoPeriodo();
+    const item = { notas: [{ estudiante_id: ctx.student.id, numero: 1, nota: 3 }] };
+    expectError(await put(ctx.ruta, item, world.tokens.teacherA), 403);
+    expectError(await get(ctx.ruta, world.tokens.teacherA), 403);
+    expectError(await put(ctx.ruta, item, world.tokens.studentA), 403);
+    expectError(await put(ctx.ruta, item, world.tokens.adminA), 403);
+    expectError(await get(ctx.ruta), 401);
+    equal((await put(ctx.ruta, item, ctx.adminToken)).status, 200, 'el admin de la institución sí');
+  });
+
   // ---- Generación masiva de boletines (GET /grades/:gradeId/bulk-report/pdf) ----
 
   suite('Boletines masivos — Autorización y validaciones');
