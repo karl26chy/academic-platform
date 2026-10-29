@@ -103,7 +103,7 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
           <div className="min-w-0">
             <CardTitle className="">Historial Académico</CardTitle>
             {student && (
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-500 break-words">
                 {student.nombre} {student.apellido} · {documentoCompleto(student.tipo_documento, student.identificacion)}
               </p>
             )}
@@ -159,18 +159,18 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
                       <div key={periodKey} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                         <button
                           onClick={() => togglePeriod(periodKey)}
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          <span>
-                            {historyPeriodLabel(period)}
+                          <span className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 text-left min-w-0">
+                            <span>{historyPeriodLabel(period)}</span>
                             {period.grade && (
-                              <span className="ml-2 text-xs font-medium text-gray-400">Grado: {period.grade.label}</span>
+                              <span className="text-xs font-medium text-gray-400">Grado: {period.grade.label}</span>
                             )}
                           </span>
                           {open ? (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                            <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
                           )}
                         </button>
 
@@ -180,9 +180,9 @@ export const AcademicHistoryView: React.FC<AcademicHistoryViewProps> = ({ studen
                               const avg = promedioMateria(subject);
                               return (
                                 <div key={subject.materia_id}>
-                                  <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-sm font-semibold text-gray-900">{subject.subject}</span>
-                                    <span className="text-xs font-semibold text-q10-600">Promedio: {avg.toFixed(1)}</span>
+                                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                                    <span className="text-sm font-semibold text-gray-900 min-w-0 break-words">{subject.subject}</span>
+                                    <span className="text-xs font-semibold text-q10-600 shrink-0">Promedio: {avg.toFixed(1)}</span>
                                   </div>
                                   <div className="overflow-x-auto">
                                     <table className="w-full text-xs">

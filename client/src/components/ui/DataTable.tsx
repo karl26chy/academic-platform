@@ -1,9 +1,15 @@
 import React from 'react';
 
-/** Envoltorio con desplazamiento horizontal para tablas anchas. */
+/**
+ * Envoltorio con desplazamiento horizontal para tablas anchas. Separa las
+ * columnas (sin esto, en pantallas angostas los textos quedaban pegados) y
+ * mantiene los encabezados en una línea: si no caben, la tabla se desliza.
+ */
 export const TableWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="overflow-x-auto">
-    <table className="w-full text-left border-collapse">{children}</table>
+    <table className="w-full text-left border-collapse [&_th:not(:last-child)]:pr-4 [&_td:not(:last-child)]:pr-4 [&_th]:whitespace-nowrap">
+      {children}
+    </table>
   </div>
 );
 

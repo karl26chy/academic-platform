@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, ChevronDown, ChevronUp, Edit3, Eye, FileText, Filter, Search, UserPlus, X } from 'lucide-react';
 import { Card, EmptyMessage, Field, INPUT, toast } from '../../ui';
 import { useClickOutside } from '../../../hooks/useClickOutside';
@@ -47,6 +47,15 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   const [boletinMasivoOpen, setBoletinMasivoOpen] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  // En celular y tablet la ficha queda debajo de la lista: al elegir un
+  // estudiante se baja hasta ella para no tener que buscarla con el scroll.
+  const selectedId = selected?.id;
+  useEffect(() => {
+    if (!selectedId || window.matchMedia('(min-width: 1024px)').matches) return;
+    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [selectedId]);
   const closeAutocomplete = useCallback(() => setShowAutocomplete(false), []);
   useClickOutside(searchRef, closeAutocomplete);
 
@@ -217,7 +226,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 min-w-0">
           <h3 className="text-sm font-bold text-gray-900 mb-4">
             Estudiantes ({filteredStudents.length})
           </h3>
@@ -238,7 +247,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                     onClick={() => setSelected(selected?.id === s.id ? null : s)}
                     className="flex-1 min-w-0 text-left"
                   >
-                    <span className="font-semibold block">{studentFullName(s)}</span>
+                    <span className="font-semibold block break-words">{studentFullName(s)}</span>
                     <span className="text-xs text-gray-500 block mt-0.5">
                       {getStudentGradeLabel(s.id)} · {getAge(s.fecha_nacimiento)} años · {s.genero || 'N/E'}
                     </span>
@@ -263,7 +272,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
           </div>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <div ref={detailRef} className="lg:col-span-2 min-w-0 scroll-mt-20">
+        <Card className="h-full">
           {!selected ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
               <Eye className="h-12 w-12 mb-3" />
@@ -286,6 +296,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
             />
           )}
         </Card>
+        </div>
       </div>
 
       {formMode && (

@@ -128,12 +128,12 @@ export const PeriodsTab: React.FC = () => {
               <TableBody>
                 {periods.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="py-3 font-semibold text-gray-900">
+                    <td className="py-3 font-semibold text-gray-900 whitespace-nowrap">
                       Periodo {p.numero}
                     </td>
                     <td className="py-3 text-gray-500">{p.anio}</td>
-                    <td className="py-3 text-gray-500">{formatFecha(p.fecha_inicio)}</td>
-                    <td className="py-3 text-gray-500">{formatFecha(p.fecha_fin)}</td>
+                    <td className="py-3 text-gray-500 whitespace-nowrap">{formatFecha(p.fecha_inicio)}</td>
+                    <td className="py-3 text-gray-500 whitespace-nowrap">{formatFecha(p.fecha_fin)}</td>
                     <td className="py-3 text-center">
                       {p.activo ? (
                         <Badge className="bg-emerald-100 text-emerald-600">ABIERTO</Badge>

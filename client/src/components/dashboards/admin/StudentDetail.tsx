@@ -26,7 +26,13 @@ interface StudentDetailProps {
   onGenerateReport: (student: User) => void;
 }
 
-/** Ficha completa del estudiante: datos, asistencia, gráfica y notas. */
+/**
+ * Ficha completa del estudiante: datos, asistencia, gráfica y notas.
+ *
+ * Se adapta al ancho de SU caja (container queries `@…:`), no al de la
+ * pantalla: en escritorio solo ocupa dos tercios junto a la lista de
+ * estudiantes, así que los cortes por pantalla la dejaban apretada.
+ */
 export const StudentDetail: React.FC<StudentDetailProps> = ({
   student, institution, subjects, marks, attendance, gradeLabel,
   average, getSubjectName, onGenerateReport,
@@ -50,42 +56,44 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
   const counts = countByStatus(attendance.filter(a => a.estudiante_id === student.id));
 
   return (
-    <div className="space-y-6">
+    <div className="@container space-y-6 min-w-0">
       {/* Ficha personal */}
-      <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-2xl p-5 text-white">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="h-14 w-14 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0">
+      <div className="bg-gradient-to-r from-q10-500 to-indigo-600 rounded-2xl p-4 @md:p-5 text-white">
+        <div className="flex flex-col @2xl:flex-row @2xl:items-start @2xl:justify-between gap-4">
+          <div className="flex items-center gap-3 @md:gap-4 min-w-0">
+            <div className="h-12 w-12 @md:h-14 @md:w-14 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-lg @md:text-xl shrink-0">
               {initials(student)}
             </div>
             <div className="min-w-0">
-              <h3 className="text-xl font-bold break-words">{studentFullName(student)}</h3>
-              <p className="text-white/80 text-sm">{gradeLabel}</p>
+              <h3 className="text-lg @md:text-xl font-bold leading-tight break-words">{studentFullName(student)}</h3>
+              <p className="text-white/80 text-sm mt-0.5">{gradeLabel}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-start justify-end gap-2 sm:gap-4 shrink-0">
-            <div className="text-right">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 @2xl:justify-end @2xl:shrink-0">
+            <div className="@2xl:text-right">
               <div className="text-white/70 text-xs">Promedio General</div>
-              <div className="text-2xl font-bold">{average}</div>
+              <div className="text-2xl font-bold leading-tight">{average}</div>
             </div>
-            <button
-              onClick={() => onGenerateReport(student)}
-              title="Generar boletín por período de este estudiante"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-medium transition-colors"
-            >
-              <FileText className="h-3.5 w-3.5" /> Generar boletín
-            </button>
-            <button
-              onClick={() => setShowHistory(v => !v)}
-              title="Ver historial académico"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-medium transition-colors"
-            >
-              <History className="h-3.5 w-3.5" /> Historial
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onGenerateReport(student)}
+                title="Generar boletín por período de este estudiante"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-medium transition-colors"
+              >
+                <FileText className="h-3.5 w-3.5" /> Generar boletín
+              </button>
+              <button
+                onClick={() => setShowHistory(v => !v)}
+                title="Ver historial académico"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-medium transition-colors"
+              >
+                <History className="h-3.5 w-3.5" /> Historial
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5 pt-4 border-t border-white/20">
+        <div className="grid grid-cols-1 @md:grid-cols-2 @3xl:grid-cols-4 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-white/20">
           <InfoItem icon={<CreditCard className="h-4 w-4 text-white/70" />} label="Documento">
             {documentoCompleto(student.tipo_documento, student.identificacion)}
           </InfoItem>
@@ -100,7 +108,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
           </InfoItem>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-white/20">
+        <div className="grid grid-cols-1 @md:grid-cols-2 gap-x-4 gap-y-3 mt-3 pt-3 border-t border-white/20">
           <InfoItem icon={<Phone className="h-4 w-4 text-white/70" />} label="Contacto Emergencia">
             {student.contacto_emergencia
               ? `${student.contacto_emergencia.nombre} (${student.contacto_emergencia.relacion}) - ${student.contacto_emergencia.telefono}`
@@ -113,7 +121,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
       </div>
 
       {/* Resumen de asistencia */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 @md:gap-4">
         <AttendanceBox
           icon={<CheckCircle className="h-5 w-5 text-emerald-600 mx-auto mb-1" />}
           value={counts.presente} label="Asistencia"
@@ -132,7 +140,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
       </div>
 
       {/* Gráfica de rendimiento */}
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 @md:p-4 min-w-0">
         <h4 className="text-sm font-bold text-gray-900 mb-3">Gráfica de Rendimiento por Materia</h4>
         {chartData.length === 0 ? (
           <EmptyMessage className="text-sm text-gray-500 py-4 text-center">
@@ -191,11 +199,11 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
 const InfoItem: React.FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({
   icon, label, children,
 }) => (
-  <div className="flex items-center gap-2">
-    {icon}
-    <div>
-      <div className="text-[10px] text-white/70">{label}</div>
-      <div className="text-sm font-semibold">{children}</div>
+  <div className="flex items-start gap-2 min-w-0">
+    <span className="mt-0.5 shrink-0">{icon}</span>
+    <div className="min-w-0">
+      <div className="text-[11px] text-white/70">{label}</div>
+      <div className="text-sm font-semibold break-words">{children}</div>
     </div>
   </div>
 );
@@ -207,9 +215,9 @@ const AttendanceBox: React.FC<{
   className: string;
   textClass: string;
 }> = ({ icon, value, label, className, textClass }) => (
-  <div className={`p-4 border rounded-xl text-center ${className}`}>
+  <div className={`p-2.5 @md:p-4 border rounded-xl text-center min-w-0 ${className}`}>
     {icon}
     <div className={`text-lg font-bold ${textClass}`}>{value}</div>
-    <div className={`text-[11px] font-medium ${textClass}`}>{label}</div>
+    <div className={`text-[11px] font-medium leading-tight break-words ${textClass}`}>{label}</div>
   </div>
 );
