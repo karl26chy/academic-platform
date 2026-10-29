@@ -1,15 +1,11 @@
 /**
- * Etiqueta canónica de un periodo académico: el número siempre visible y el
- * nombre descriptivo separado del número.
+ * Etiqueta canónica de un periodo académico: solo número y año. El nombre
+ * guardado no se muestra (un periodo es siempre "Periodo N").
  *
- *   periodLabel({ numero: 1, nombre: 'Primer periodo', anio: 2026 })
- *   → "Periodo 1 — Primer periodo — 2026"
+ *   periodLabel({ numero: 4, nombre: 'Cuarto periodo', anio: 2026 })
+ *   → "Periodo 4 — 2026"
  *
- * Si el nombre es simplemente "Periodo X" y X coincide con `numero`, no se
- * repite:
- *
- *   periodLabel({ numero: 1, nombre: 'Periodo 1', anio: 2026 })
- *   → "Periodo 1 — 2026"
+ * Solo si falta el número (datos heredados) se usa el nombre como respaldo.
  */
 export interface PeriodLike {
   id?: string;
@@ -24,15 +20,8 @@ export function periodLabel(p?: PeriodLike | null): string {
   const partes: string[] = [];
   if (p.numero !== undefined && p.numero !== null) {
     partes.push(`Periodo ${p.numero}`);
-  }
-  if (p.nombre) {
-    const nombreLimpio = String(p.nombre).trim();
-    // No repetir "Periodo X" cuando X coincide con el número del periodo.
-    const esRedundante =
-      p.numero !== undefined &&
-      p.numero !== null &&
-      nombreLimpio.toLowerCase() === `periodo ${p.numero}`.toLowerCase();
-    if (!esRedundante) partes.push(nombreLimpio);
+  } else if (p.nombre) {
+    partes.push(String(p.nombre).trim());
   }
   if (p.anio !== undefined && p.anio !== null && p.anio !== '') {
     partes.push(String(p.anio));
@@ -73,10 +62,7 @@ export function boletinChoices(periods: PeriodLike[], anio: number): BoletinChoi
   const choices: BoletinChoice[] = delAnio.map(p => ({
     type: 'period',
     periodId: p.id,
-    label:
-      p.nombre && p.nombre.trim().toLowerCase() !== `periodo ${p.numero}`.toLowerCase()
-        ? `${p.nombre} (${p.numero})`
-        : `Período ${p.numero}`,
+    label: `Período ${p.numero}`,
   }));
   choices.push({ type: 'all', label: `Todos los períodos — ${anio}` });
   return choices;

@@ -69,11 +69,20 @@ describe('boletinChoices', () => {
 });
 
 describe('periodLabel', () => {
-  test('etiqueta con número, nombre y año', () => {
-    assert.equal(periodLabel({ numero: 1, nombre: 'Primer periodo', anio: 2026 }), 'Periodo 1 — Primer periodo — 2026');
+  test('solo número y año: el nombre guardado no se muestra', () => {
+    assert.equal(periodLabel({ numero: 4, nombre: 'Cuarto periodo', anio: 2026 }), 'Periodo 4 — 2026');
+    assert.equal(periodLabel({ numero: 1, nombre: 'Periodo 1', anio: 2026 }), 'Periodo 1 — 2026');
   });
 
-  test('sin repetir "Periodo X" cuando el nombre coincide con el número', () => {
-    assert.equal(periodLabel({ numero: 1, nombre: 'Periodo 1', anio: 2026 }), 'Periodo 1 — 2026');
+  test('sin número (dato heredado) usa el nombre como respaldo', () => {
+    assert.equal(periodLabel({ nombre: 'Primer periodo', anio: 2026 }), 'Primer periodo — 2026');
+  });
+});
+
+describe('boletinChoices: etiqueta', () => {
+  test('cada período se muestra solo por su número', () => {
+    const c = boletinChoices(periodos, 2026);
+    assert.equal(c[0].label, 'Período 1', 'aunque se llame "Primer periodo"');
+    assert.equal(c[1].label, 'Período 2');
   });
 });

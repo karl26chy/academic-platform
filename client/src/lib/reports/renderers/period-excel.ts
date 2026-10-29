@@ -14,7 +14,7 @@ export function renderBoletinPeriodExcel(data: AcademicReportData) {
 
   const aoa: (string | number)[][] = [
     [`Boletín de Calificaciones - ${data.institution.nombre}`],
-    [`Período ${per.numero}${per.nombre ? ` (${per.nombre})` : ''} - Año ${per.anio}`],
+    [`Período ${per.numero} - Año ${per.anio}`],
     [],
     ['Estudiante', studentFullName(data.student)],
     ['Identificación', ident],

@@ -5,6 +5,9 @@ import type { PeriodFormData } from './useAcademicPeriods';
 
 const ANIO_ACTUAL = new Date().getFullYear();
 
+/** El año escolar tiene 4 periodos: el número define su columna en el boletín. */
+const NUMEROS_PERIODO = [1, 2, 3, 4];
+
 interface PeriodFormProps {
   /** Si se pasa, el formulario trabaja en modo edición con esos valores. */
   initial?: AcademicPeriod | null;
@@ -15,8 +18,10 @@ interface PeriodFormProps {
 }
 
 /**
- * Formulario de periodo académico. La regla de "abrir cierra los demás" la
- * impone el backend: aquí solo se decide si el periodo nace/queda abierto.
+ * Formulario de periodo académico. El periodo se identifica solo por número
+ * y año; el nombre se guarda siempre como "Periodo N". La regla de "abrir
+ * cierra los demás" la impone el backend: aquí solo se decide si el periodo
+ * nace/queda abierto.
  */
 export const PeriodForm: React.FC<PeriodFormProps> = ({
   initial = null,
@@ -25,7 +30,6 @@ export const PeriodForm: React.FC<PeriodFormProps> = ({
   onCancel,
   busy = false,
 }) => {
-  const [nombre, setNombre] = useState(initial?.nombre || '');
   const [numero, setNumero] = useState(initial ? String(initial.numero) : '');
   const [anio, setAnio] = useState(initial ? String(initial.anio) : String(ANIO_ACTUAL));
   const [fechaInicio, setFechaInicio] = useState(initial?.fecha_inicio || '');
@@ -33,18 +37,22 @@ export const PeriodForm: React.FC<PeriodFormProps> = ({
   const [activo, setActivo] = useState(initial?.activo ?? false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Un periodo antiguo con número fuera de 1–4 sigue apareciendo al editarlo.
+  const opcionesNumero = initial && !NUMEROS_PERIODO.includes(Number(initial.numero))
+    ? [...NUMEROS_PERIODO, Number(initial.numero)]
+    : NUMEROS_PERIODO;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim()) return setLocalError('El nombre es obligatorio.');
     const num = Number(numero);
-    if (!numero || Number.isNaN(num) || num <= 0) return setLocalError('El número debe ser un entero positivo.');
+    if (!numero || !Number.isInteger(num) || num <= 0) return setLocalError('Selecciona el número del periodo.');
     const year = Number(anio);
     if (!anio || Number.isNaN(year)) return setLocalError('El año debe ser un número.');
     if (!fechaInicio) return setLocalError('La fecha de inicio es obligatoria.');
     if (!fechaFin) return setLocalError('La fecha de fin es obligatoria.');
     setLocalError(null);
     onSubmit({
-      nombre: nombre.trim(),
+      nombre: `Periodo ${num}`,
       numero: num,
       anio: year,
       fecha_inicio: fechaInicio,
@@ -55,24 +63,18 @@ export const PeriodForm: React.FC<PeriodFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Nombre del periodo">
-        <input
-          type="text" required value={nombre}
-          onChange={e => setNombre(e.target.value)}
-          className={INPUT} placeholder="Ej: Primer periodo"
-        />
-      </Field>
-      <p className="-mt-2 text-[11px] text-gray-400">
-        Solo el nombre descriptivo. El número del periodo va en el campo «Número».
-      </p>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Número">
-          <input
-            type="number" min="1" required value={numero}
+        <Field label="Periodo">
+          <select
+            required value={numero}
             onChange={e => setNumero(e.target.value)}
             className={INPUT}
-          />
+          >
+            <option value="" disabled>Selecciona…</option>
+            {opcionesNumero.map(n => (
+              <option key={n} value={n}>Periodo {n}</option>
+            ))}
+          </select>
         </Field>
         <Field label="Año">
           <input
