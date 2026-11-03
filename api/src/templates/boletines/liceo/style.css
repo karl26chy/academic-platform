@@ -268,7 +268,7 @@ body {
 /* Adaptación para impresión */
 @media print {
     @page {
-        size: letter portrait; /* Define explícitamente el tamaño Carta y vertical */
+        size: 216mm 330mm;     /* Tamaño oficio (Colombia), vertical */
         margin: 10mm;          /* Margen seguro para la impresora */
     }
 

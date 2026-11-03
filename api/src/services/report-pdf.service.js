@@ -12,6 +12,10 @@ import { HttpError } from '../shared/http-error.js';
 Handlebars.registerHelper('gte', (a, b) => a !== null && a !== undefined && a >= b);
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('inc', i => Number(i) + 1);
+// Nota con una cifra decimal siempre: 4 → "4.0", 4.36 → "4.4".
+Handlebars.registerHelper('nota', v =>
+  v === null || v === undefined || v === '' ? '' : Number(`${Math.round(Number(`${v}e1`))}e-1`).toFixed(1)
+);
 
 /**
  * Plantilla Handlebars ya compilada. El registro devuelve un objeto nuevo
@@ -191,7 +195,9 @@ export async function renderReportPDF(studentId, anio, institucionId) {
     await page.setContent(htmlFinal, { waitUntil: 'load' });
     // puppeteer devuelve un Uint8Array: Express lo serializaría como JSON y
     // archiver no lo acepta. Se entrega siempre como Buffer.
-    return Buffer.from(await page.pdf({ format: 'letter', printBackground: true }));
+    // Cada plantilla puede fijar su tamaño con @page (p. ej. oficio en el
+    // Liceo); las que no lo declaran salen en carta.
+    return Buffer.from(await page.pdf({ format: 'letter', preferCSSPageSize: true, printBackground: true }));
   } finally {
     if (page) {
       await page.close().catch(() => {});

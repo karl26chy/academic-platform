@@ -71,9 +71,9 @@
                         <td class="center">{{inc @index}}</td>
                         <td class="bold">{{this.materia}}</td>
                         {{#each this.porPeriodo}}
-                        <td class="center{{#if (eq this.desempeno 'Z')}} nota-baja{{/if}}">{{#if this.valoracion}}{{this.valoracion}}{{else}}&nbsp;{{/if}}</td>
+                        <td class="center{{#if (eq this.desempeno 'Z')}} nota-baja{{/if}}">{{#if this.valoracion}}{{nota this.valoracion}}{{else}}&nbsp;{{/if}}</td>
                         {{/each}}
-                        <td class="center bold{{#if (eq this.desempenoDefinitiva 'Z')}} nota-baja{{/if}}">{{#if this.definitiva}}{{this.definitiva}}{{else}}&nbsp;{{/if}}</td>
+                        <td class="center bold{{#if (eq this.desempenoDefinitiva 'Z')}} nota-baja{{/if}}">{{#if this.definitiva}}{{nota this.definitiva}}{{else}}&nbsp;{{/if}}</td>
                         <td class="center bold">{{this.desempenoDefinitiva}}</td>
                         <td>{{this.logros}}</td>
                         <td class="center">

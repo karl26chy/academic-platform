@@ -30,6 +30,16 @@ function weightedAverage(marks) {
   return Number(avg.toFixed(2));
 }
 
+/**
+ * Nota del boletín anual con UNA cifra decimal (4.36 → 4.4), redondeando la
+ * mitad hacia arriba (4.35 → 4.4). Se usa la notación exponencial porque
+ * 4.35 * 10 en binario da 43.4999… y Math.round lo bajaría a 4.3.
+ */
+export function notaBoletin(valor) {
+  if (valor === null || valor === undefined) return null;
+  return Number(`${Math.round(Number(`${valor}e1`))}e-1`);
+}
+
 function edadDesde(fechaNacimiento) {
   if (!fechaNacimiento) return null;
   const match = String(fechaNacimiento).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -395,21 +405,26 @@ export async function getYearReport(user, studentId, anio) {
     return null;
   };
 
+  // En el boletín anual todas las notas van con UNA cifra decimal, y la
+  // definitiva, el desempeño y el estado se calculan con esas notas ya
+  // redondeadas: lo que se ve es lo que cuenta (un 2.96 que se muestra como
+  // 3.0 no puede salir "Reprobado" con mínima 3).
   const subjects = Object.keys(subjectMeta).map(materiaId => {
     const porPeriodo = periods.map((period, i) => {
       const dato = (perPeriodBySubject[materiaId] || []).find(d => d.index === i);
+      const valoracion = dato ? notaBoletin(dato.valoracion) : null;
       return {
         period_id: period.id,
         numero: period.numero,
-        valoracion: dato ? dato.valoracion : null,
-        desempeno: dato ? dato.desempeno : null,
+        valoracion,
+        desempeno: desempeno(valoracion, escalaMaxima),
         fallas: dato ? dato.fallas : null,
         justificadas: dato ? dato.justificadas : null,
       };
     });
     const valoraciones = porPeriodo.map(p => p.valoracion).filter(v => v !== null && v !== undefined);
     const definitiva = valoraciones.length > 0
-      ? Number((valoraciones.reduce((a, b) => a + b, 0) / valoraciones.length).toFixed(2))
+      ? notaBoletin(valoraciones.reduce((a, b) => a + b, 0) / valoraciones.length)
       : null;
     const estado =
       definitiva === null
@@ -449,12 +464,12 @@ export async function getYearReport(user, studentId, anio) {
   );
   attendance.tasa = attendance.total === 0 ? 0 : Math.round((attendance.presente / attendance.total) * 100);
 
-  const promediosPeriodo = periodsData.map(r => r.summary.promedioGeneral);
+  const promediosPeriodo = periodsData.map(r => notaBoletin(r.summary.promedioGeneral));
   const desempenosPeriodo = promediosPeriodo.map(p => desempeno(p, escalaMaxima));
   const definitivas = subjects.map(s => s.definitiva).filter(v => v !== null && v !== undefined);
   const promedioGeneralDefinitivo =
     definitivas.length > 0
-      ? Number((definitivas.reduce((a, b) => a + b, 0) / definitivas.length).toFixed(2))
+      ? notaBoletin(definitivas.reduce((a, b) => a + b, 0) / definitivas.length)
       : null;
 
   // Observación más reciente del estudiante con texto

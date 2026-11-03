@@ -334,8 +334,8 @@ export default async function reportsSuite(world) {
     equal(res.subjects[0].porPeriodo[1].valoracion, 4.5, 'P2 = 4.5');
     equal(res.subjects[0].porPeriodo[2].valoracion, null, 'P3 = null');
     equal(res.subjects[0].porPeriodo[3].valoracion, null, 'P4 = null');
-    equal(res.subjects[0].definitiva, 4.25, 'definitiva = promedio de los períodos con dato');
-    equal(res.summary.promedioGeneralDefinitivo, 4.25, 'promedio general definitivo');
+    equal(res.subjects[0].definitiva, 4.3, 'definitiva = (4.0+4.5)/2 = 4.25 → una cifra decimal: 4.3');
+    equal(res.summary.promedioGeneralDefinitivo, 4.3, 'promedio general definitivo (una cifra decimal)');
   });
 
   await test('reporte anual con 4 períodos (dinámico)', async () => {
@@ -349,7 +349,7 @@ export default async function reportsSuite(world) {
     const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     equal(res.periods.length, 4, 'cuatro períodos');
     equal(res.subjects[0].porPeriodo.length, 4, 'cuatro bloques por materia');
-    equal(res.subjects[0].definitiva, 4.22, 'definitiva = (4.0+4.2+4.3+4.4)/4');
+    equal(res.subjects[0].definitiva, 4.2, 'definitiva = (4.0+4.2+4.3+4.4)/4 = 4.225 → 4.2');
   });
 
   await test('período sin notas no se inventa como 0 en la definitiva', async () => {
@@ -610,7 +610,7 @@ export default async function reportsSuite(world) {
     const boletin = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
     const materia = boletin.subjects.find(s => s.materia_id === ctx.subject.id);
     equal(materia.porPeriodo.map(p => p.valoracion).join(','), '3,3.5,4.5,4', 'P1–P3 cargadas + P4 calculado');
-    equal(materia.definitiva, 3.75, 'definitiva anual = promedio de los 4 periodos');
+    equal(materia.definitiva, 3.8, 'definitiva anual = (3+3.5+4.5+4)/4 = 3.75 → 3.8');
     equal(materia.porPeriodo[2].desempeno, 'A', 'desempeño de la definitiva cargada (4.5 → A)');
     equal(boletin.summary.promediosPeriodo[0], 3, 'promedio del periodo 1');
 
@@ -658,6 +658,31 @@ export default async function reportsSuite(world) {
     expectError(await put(ctx.ruta, item, world.tokens.adminA), 403);
     expectError(await get(ctx.ruta), 401);
     equal((await put(ctx.ruta, item, ctx.adminToken)).status, 200, 'el admin de la institución sí');
+  });
+
+  await test('boletín: notas con una cifra decimal y estado según la nota que se ve', async () => {
+    // Escala 5, mínima 3. Nota de periodo 4.36 → 4.4; 2.96 → 3.0 debe aprobar.
+    const ctx = await mkInstitution(5, 3);
+    await addMark(ctx, ctx.student.id, 4.36, 100);
+    const res = (await get(`/students/${ctx.student.id}/report?anio=2026`, ctx.adminToken)).data;
+    equal(res.subjects[0].porPeriodo[0].valoracion, 4.4, '4.36 → 4.4');
+    equal(res.subjects[0].definitiva, 4.4, 'definitiva con una cifra decimal');
+
+    const ctx2 = await mkInstitution(5, 3);
+    await addMark(ctx2, ctx2.student.id, 2.96, 100);
+    const res2 = (await get(`/students/${ctx2.student.id}/report?anio=2026`, ctx2.adminToken)).data;
+    equal(res2.subjects[0].porPeriodo[0].valoracion, 3, '2.96 → 3.0');
+    equal(res2.subjects[0].estado, 'Aprobado', 'un 3.0 visible con mínima 3 aprueba');
+    equal(res2.subjects[0].porPeriodo[0].desempeno, 'B', 'desempeño con la nota redondeada (3.0 → B)');
+  });
+
+  await test('boletín: el redondeo sube la mitad (4.35 → 4.4, 4.25 → 4.3)', async () => {
+    const { notaBoletin } = await import('../../src/services/report.service.js');
+    equal(notaBoletin(4.35), 4.4, '4.35 → 4.4 (sin el error binario que daría 4.3)');
+    equal(notaBoletin(4.25), 4.3, '4.25 → 4.3');
+    equal(notaBoletin(4.34), 4.3, '4.34 → 4.3');
+    equal(notaBoletin(9.96), 10, '9.96 → 10');
+    equal(notaBoletin(null), null, 'sin nota → null');
   });
 
   // ---- Generación masiva de boletines (GET /grades/:gradeId/bulk-report/pdf) ----
