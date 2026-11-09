@@ -1,4 +1,30 @@
 import { HttpError } from '../shared/http-error.js';
+import { subdominiosQueEmpiezanPor } from '../repositories/resource.repository.js';
+
+/**
+ * Identificador interno de la institución a partir de su nombre:
+ * "Jesús de la Buena Esperanza" → "jesusdelabuenaesperanza".
+ *
+ * La plataforma ya no usa un subdominio por colegio (todo vive en un solo
+ * dominio y la institución sale de la cuenta del usuario), pero la columna
+ * `subdominio` sigue siendo obligatoria y única en la base: se llena sola.
+ */
+export function slugInstitucion(nombre) {
+  const slug = String(nombre ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]/g, '')
+    .slice(0, 40);
+  return slug || 'institucion';
+}
+
+async function subdominioLibre(nombre) {
+  const base = slugInstitucion(nombre);
+  const usados = await subdominiosQueEmpiezanPor(base);
+  if (!usados.has(base)) return base;
+  let n = 2;
+  while (usados.has(`${base}${n}`)) n++;
+  return `${base}${n}`;
+}
 
 /** Tipos de institución soportados. */
 export const INSTITUTION_TYPES = ['colegio', 'corporacion', 'universidad'];
@@ -14,6 +40,12 @@ export async function validateInstitution(data, existingRow) {
 
   if (data.tipo !== undefined && !INSTITUTION_TYPES.includes(data.tipo)) {
     throw new HttpError(400, 'Tipo de institución inválido.');
+  }
+
+  if (creando) {
+    if (!String(data.nombre ?? '').trim()) throw new HttpError(400, 'El nombre de la institución es obligatorio.');
+    // Sin subdominio por colegio: el identificador interno se genera solo.
+    if (!String(data.subdominio ?? '').trim()) data.subdominio = await subdominioLibre(data.nombre);
   }
 
   // Escala efectiva: la enviada, el default por tipo al crear, o la guardada.

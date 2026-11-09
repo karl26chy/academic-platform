@@ -47,6 +47,20 @@ export default async function rbacWriteSuite(world) {
     equal((await del(`/institutions/${res.data.id}`, world.tokens.super)).status, 200, 'borrado');
   });
 
+  await test('sin subdominio por colegio: el identificador interno se genera solo y no se repite', async () => {
+    const nombre = `Jesús de la Buena Esperanza ${world.id}`;
+    const crear = () => post('/institutions', { nombre, tipo: 'colegio', activa: true }, world.tokens.super);
+    const a = await crear();
+    const b = await crear();
+    equal(a.status, 201, 'se crea sin enviar subdominio');
+    equal(b.status, 201, 'el mismo nombre otra vez también se crea');
+    const base = `jesusdelabuenaesperanza${String(world.id).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+    equal(a.data.subdominio, base, 'sin tildes, espacios ni mayúsculas');
+    equal(b.data.subdominio, `${base}2`, 'el segundo recibe un sufijo y no choca');
+    for (const inst of [a.data, b.data]) await del(`/institutions/${inst.id}`, world.tokens.super);
+    expectError(await post('/institutions', { nombre: '  ', tipo: 'colegio' }, world.tokens.super), 400, 'El nombre de la institución es obligatorio.');
+  });
+
   // ---- Usuarios: solo admin de la propia institución ----------------------
   await test('un profesor no puede crear usuarios', async () => {
     expectError(

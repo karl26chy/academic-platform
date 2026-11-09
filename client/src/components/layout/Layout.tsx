@@ -14,7 +14,7 @@ const roleDetailsFor = (rol: string) =>
 
 /** Marco común: cabecera con institución activa, avisos y sesión. */
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout, currentInstitution, activeSubdomain, messages, setNavigateToTab } = useApp();
+  const { user, logout, currentInstitution, messages, setNavigateToTab } = useApp();
 
   const unreadMessages = useMemo(() => {
     if (!user) return 0;
@@ -45,11 +45,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <h1 className="text-md font-bold text-gray-900 leading-tight truncate">
                   {currentInstitution ? currentInstitution.nombre : 'Portal General'}
                 </h1>
-                {activeSubdomain && (
-                  <span className="text-[11px] font-medium text-gray-500 truncate block">
-                    {activeSubdomain}.plataforma.com
-                  </span>
-                )}
               </>
             )}
           </div>

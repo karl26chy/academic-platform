@@ -1,6 +1,6 @@
 # Plataforma Educativa Multi-Institución
 
-Sistema integral de gestión académica para colegios y universidades, con soporte multi-institucional basado en subdominios. Inspirado en Q10.
+Sistema integral de gestión académica para colegios y universidades, con soporte multi-institucional: toda la plataforma usa un solo dominio y cada persona entra a su institución según su cuenta. Inspirado en Q10.
 
 ## Arquitectura
 
@@ -90,8 +90,8 @@ docker compose -f docker-compose.local.yml down
 ```
 
 Credenciales del seed local (`api/scripts/seed-local.js`):
-- Super Admin: `super@local.test` / `Super123!` (sin subdominio)
-- Admin: `admin@demo-local.test` / `Admin123!` (subdominio `demo-local`)
+- Super Admin: `super@local.test` / `Super123!`
+- Admin: `admin@demo-local.test` / `Admin123!`
 - Docentes: `doc1@demo-local.test` / `Doc123!`, `doc2@demo-local.test` / `Doc123!`
 - Estudiantes: `est1@demo-local.test`..`est10@demo-local.test` / `Est123!` (login por identificación `EST-DEMO-001`..)
 
@@ -157,21 +157,14 @@ docker compose up -d --build
 
 ### 2. DNS
 
-Crea un registro **wildcard** y el subdominio del portal admin apuntando a tu VPS:
+La plataforma usa **un solo dominio** (no hay un subdominio por colegio). Crea un registro **A** apuntando a tu VPS:
 
-- `*.tudominio.com` → IP del VPS
-- `admin.tudominio.com` → IP del VPS
+- `tudominio.com` → IP del VPS
+- `www.tudominio.com` → IP del VPS (opcional)
 
-### 3. Nginx + dominio real
+### 3. Nginx
 
-El archivo `client/nginx.conf` usa el placeholder `TU_DOMINIO`. Reemplázalo por tu dominio real:
-
-```nginx
-server_name ~^(?<subdomain>.+)\.tudominio\.com$;   # instituciones
-server_name admin.tudominio.com;                    # portal super admin
-```
-
-Luego reconstruye el contenedor del cliente: `docker compose up -d --build client`.
+`client/nginx.conf` tiene un único bloque `server` que atiende cualquier nombre de dominio: no hay que editarlo para poner el dominio.
 
 ### 4. SSL (Let's Encrypt)
 
@@ -180,7 +173,7 @@ Con `certbot` en el host, apuntando a los contenedores:
 ```bash
 # opción 1: certbot standalone + recargar nginx del contenedor
 docker compose run --rm --service-ports certbot certonly --standalone \
-  -d tudominio.com -d '*.tudominio.com' -d admin.tudominio.com \
+  -d tudominio.com -d www.tudominio.com \
   --preferred-challenges http
 ```
 
@@ -197,7 +190,7 @@ docker compose exec db pg_dump -U platform platform > backup_$(date +%F).sql
 > La base de datos se despliega vacía con un único super administrador.
 > Inicia sesión y desde el dashboard crea instituciones, usuarios, grados y materias.
 
-### Super Admin (sin subdominio)
+### Super Admin
 
 Se crea manualmente con `api/scripts/seed-supabase.js` definiendo las variables de entorno:
 

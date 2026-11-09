@@ -34,7 +34,6 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
   institutions, showMsg, onChanged,
 }) => {
   const [nombre, setNombre] = useState('');
-  const [subdominio, setSubdominio] = useState('');
   const [tipo, setTipo] = useState<Tipo>('colegio');
   const [escala, setEscala] = useState(10);
   const [notaMinima, setNotaMinima] = useState(6.0);
@@ -71,19 +70,14 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !subdominio) return;
-
-    const exists = institutions.some(i => i.subdominio.toLowerCase() === subdominio.toLowerCase());
-    if (exists) {
-      showMsg('error', 'El subdominio ya existe.');
-      return;
-    }
+    if (!nombre.trim()) return;
 
     try {
       setLoading(true);
       const newInst = (await api.createInstitution({
-        nombre,
-        subdominio: subdominio.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        // Sin subdominio: toda la plataforma usa un solo dominio y el API
+        // genera el identificador interno a partir del nombre.
+        nombre: nombre.trim(),
         tipo,
         escala_maxima: escala,
         nota_minima_aprobacion: clampNotaMinima(Number(notaMinima), escala),
@@ -103,7 +97,6 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
       }
 
       setNombre('');
-      setSubdominio('');
       setEscala(10);
       setNotaMinima(6.0);
       setReportTemplateId('default');
@@ -179,20 +172,6 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Subdominio</label>
-            <div className="relative">
-              <input
-                type="text" required value={subdominio} onChange={e => setSubdominio(e.target.value)}
-                placeholder="colegiosanignacio"
-                className="w-full pl-4 pr-4 sm:pr-32 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-q10-500/50"
-              />
-              <span className="hidden sm:block absolute right-3 top-2.5 text-xs text-gray-500 font-semibold">
-                .plataforma.com
-              </span>
-            </div>
-          </div>
-
-          <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de institución</label>
             <select
               value={tipo}
@@ -260,7 +239,6 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
         <TableWrapper>
           <TableHead uppercase>
             <th className="pb-3">Nombre</th>
-            <th className="pb-3">Subdominio</th>
             <th className="pb-3 text-center">Tipo</th>
             <th className="pb-3 text-center">Escala</th>
             <th className="pb-3 text-center">Nota Mín.</th>
@@ -271,7 +249,6 @@ export const InstitutionsTab: React.FC<InstitutionsTabProps> = ({
             {institutions.map(inst => (
               <tr key={inst.id} className="hover:bg-gray-50 transition-colors">
                 <td className="py-3.5 font-medium text-gray-900">{inst.nombre}</td>
-                <td className="py-3.5 text-gray-500">{inst.subdominio}.plataforma.com</td>
                 <td className="py-3.5 text-center">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${badgeTipo(inst.tipo)}`}>
                     {inst.tipo}
@@ -414,11 +391,6 @@ const EditInstitutionModal: React.FC<{
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
           <input type="text" required value={nombre} onChange={e => setNombre(e.target.value)} className={INPUT_LARGE} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Subdominio</label>
-          <input type="text" value={institution.subdominio} disabled className={`${INPUT_LARGE} opacity-60 cursor-not-allowed`} />
-          <p className="text-[11px] text-gray-400 mt-1">El subdominio no se puede cambiar; identifica la institución.</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de institución</label>

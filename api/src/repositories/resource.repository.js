@@ -132,6 +132,15 @@ export async function institutionById(institutionId) {
   return rows[0] || null;
 }
 
+/** Identificadores internos (columna subdominio) que ya empiezan por `base`. */
+export async function subdominiosQueEmpiezanPor(base) {
+  const { rows } = await pool.query(
+    'SELECT subdominio FROM institutions WHERE subdominio = $1 OR subdominio LIKE $2',
+    [base, `${base}%`]
+  );
+  return new Set(rows.map(r => r.subdominio));
+}
+
 export async function hasAssignment(teacherId, subjectId, gradeId) {
   const { rows } = await pool.query(
     'SELECT 1 FROM assignments WHERE "profesor_id" = $1 AND "materia_id" = $2 AND "grado_id" = $3',

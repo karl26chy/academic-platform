@@ -35,8 +35,6 @@ export interface AppContextValue {
   messages: Message[];
   evaluations: Evaluation[];
 
-  activeSubdomain: string | null;
-  setSimulatedSubdomain: (subdomain: string | null) => void;
 
   login: (identifier: string, password: string) => Promise<boolean>;
   logout: () => void;
