@@ -6,6 +6,12 @@ import * as controller from '../controllers/report.controller.js';
 const router = express.Router();
 
 router.get('/students/:studentId/report', requireAuth, controller.getReport);
+
+/**
+ * Estado académico anual de todos los estudiantes de una institución, en una
+ * sola petición (estudiantes en riesgo y destacados del resumen del admin).
+ */
+router.get('/institutions/:institutionId/academic-status', requireAuth, controller.getInstitutionStatus);
 router.get('/students/:studentId/report/pdf', requireAuth, pdfRateLimit, controller.getReportPDF);
 
 /**

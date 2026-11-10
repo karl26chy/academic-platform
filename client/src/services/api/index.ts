@@ -45,6 +45,7 @@ export const api = {
   // Reportes / boletines (JSON para Excel)
   getStudentReport: reportApi.getStudentReport,
   getStudentYearReport: reportApi.getStudentYearReport,
+  getInstitutionStatus: reportApi.getInstitutionStatus,
 
   // Academic history
   getStudentAcademicHistory: (

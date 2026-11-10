@@ -178,3 +178,74 @@ export async function gradeBasicInfo(gradeId) {
   );
   return rows[0] || null;
 }
+
+// --- Estado académico de toda una institución (resumen del admin) -----------
+// Consultas en bloque: cuestan lo mismo con 10 que con 1.000 estudiantes.
+
+/**
+ * Estudiantes de la institución con al menos una nota, y su grado (la misma
+ * matrícula que toma el boletín: la primera que encuentre).
+ */
+export async function studentsWithMarksOf(institucionId) {
+  const { rows } = await pool.query(
+    `SELECT u.id, sg.grado_id
+     FROM users u
+     LEFT JOIN LATERAL (
+       SELECT grado_id FROM student_grades WHERE estudiante_id = u.id LIMIT 1
+     ) sg ON true
+     WHERE u.institucion_id = $1 AND u.rol = 'student'
+       AND EXISTS (SELECT 1 FROM marks m WHERE m.estudiante_id = u.id)`,
+    [institucionId]
+  );
+  return rows;
+}
+
+/** Materias asignadas a cada grado de la institución. */
+export async function assignmentsOfInstitution(institucionId) {
+  const { rows } = await pool.query(
+    `SELECT a.grado_id, a.materia_id
+     FROM assignments a
+     JOIN grades g ON g.id = a.grado_id
+     WHERE g.institucion_id = $1`,
+    [institucionId]
+  );
+  return rows;
+}
+
+/** Notas (con evaluación existente) de varios estudiantes en varios períodos. */
+export async function marksOfStudentsInPeriods(studentIds, periodIds) {
+  if (studentIds.length === 0 || periodIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT m.estudiante_id, m.materia_id, m.periodo_id, m.nota, m.porcentaje
+     FROM marks m
+     INNER JOIN evaluations e ON e.id = m.evaluacion_id
+     WHERE m.estudiante_id = ANY($1) AND m.periodo_id = ANY($2)`,
+    [studentIds, periodIds]
+  );
+  return rows;
+}
+
+/** Qué (grado, materia, período) tienen al menos una evaluación. */
+export async function evaluatedClassesInPeriods(institucionId, periodIds) {
+  if (periodIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT DISTINCT grado_id, materia_id, periodo_id
+     FROM evaluations
+     WHERE "institucion_id" = $1 AND periodo_id = ANY($2)`,
+    [institucionId, periodIds]
+  );
+  return rows;
+}
+
+/** Conteo de asistencia por estudiante y estado en varios períodos. */
+export async function attendanceCountsOfStudents(studentIds, periodIds) {
+  if (studentIds.length === 0 || periodIds.length === 0) return [];
+  const { rows } = await pool.query(
+    `SELECT estudiante_id, estado, COUNT(*)::int AS n
+     FROM attendance
+     WHERE estudiante_id = ANY($1) AND periodo_id = ANY($2)
+     GROUP BY estudiante_id, estado`,
+    [studentIds, periodIds]
+  );
+  return rows;
+}

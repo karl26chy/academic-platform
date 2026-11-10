@@ -120,3 +120,15 @@ export async function currentYearOf(institucionId) {
   );
   return rows[0] ? Number(rows[0].anio) : new Date().getFullYear();
 }
+
+/** Definitivas cargadas de varios estudiantes en un año (resumen del admin). */
+export async function ofStudentsYear(studentIds, anio) {
+  if (studentIds.length === 0) return [];
+  await ensureTable();
+  const { rows } = await pool.query(
+    `SELECT estudiante_id, materia_id, numero, nota FROM period_final_grades
+     WHERE estudiante_id = ANY($1) AND anio = $2`,
+    [studentIds, Number(anio)]
+  );
+  return rows.map(r => ({ ...r, nota: Number(r.nota) }));
+}

@@ -10,35 +10,14 @@ import {
   type GradeGroup,
 } from '../../../lib/academicStatus';
 
-const CONCURRENCIA = 6;
-
-/** Aplica `fn` sobre `items` con un límite de ejecuciones simultáneas,
- *  preservando el orden de entrada. */
-async function mapWithLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await fn(items[i]);
-    }
-  };
-  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
-  await Promise.all(workers);
-  return results;
-}
-
 /**
  * Estado académico institucional para el resumen del admin.
  *
- * El promedio acumulado (promedioGeneralDefinitivo) y la banda de desempeño
- * (desempenoGlobal) vienen EXCLUSIVAMENTE de `getStudentYearReport` (misma
- * lógica del boletín anual: períodos cerrados + período actual, sin inventar
- * ceros). La asistencia se muestra como indicador, sin determinar el riesgo.
+ * El promedio acumulado y la banda de desempeño los calcula el API para toda
+ * la institución en UNA petición (`getInstitutionStatus`), con la misma
+ * lógica del boletín anual. Antes se pedía el boletín de cada estudiante por
+ * separado: con cientos de estudiantes eran cientos de peticiones.
+ * La asistencia se muestra como indicador, sin determinar el riesgo.
  *
  * Se recalcula cuando cambian las colecciones del contexto (tras `refreshData`),
  * así el resumen se actualiza conforme se registran/cierran períodos.
@@ -56,12 +35,6 @@ export function useAcademicRisk() {
   const students = useMemo(
     () => users.filter(u => u.rol === 'student' && u.institucion_id === instId),
     [users, instId]
-  );
-
-  /** Solo estudiantes con al menos una nota: sin notas no hay clasificación. */
-  const conNotas = useMemo(
-    () => students.filter(s => marks.some(m => m.estudiante_id === s.id)),
-    [students, marks]
   );
 
   // Resuelve el año académico desde los períodos reales de la institución.
@@ -91,24 +64,25 @@ export function useAcademicRisk() {
     setLoading(true);
     setError(null);
     try {
-      const reports = await mapWithLimit(conNotas, CONCURRENCIA, async s =>
-        api.getStudentYearReport(s.id, anio)
-      );
-      const lista: AcademicStatus[] = reports.map((rep, idx) => {
-        const st = conNotas[idx];
+      // Solo llegan estudiantes con al menos una nota: sin notas no hay clasificación.
+      const estados = await api.getInstitutionStatus(instId, anio);
+      const porId = new Map(students.map(s => [s.id, s]));
+      const lista: AcademicStatus[] = estados.flatMap(est => {
+        const st = porId.get(est.studentId);
+        if (!st) return [];
         const enrollment = studentGrades.find(sg => sg.estudiante_id === st.id);
         const grade = enrollment ? grades.find(g => g.id === enrollment.grado_id) : null;
-        return {
+        return [{
           studentId: st.id,
           nombre: studentFullName(st),
           apellido: st.apellido,
           gradeId: grade?.id ?? null,
           gradeNombre: grade ? gradeLabel(grade) : 'Sin asignar',
-          promedio: rep.summary.promedioGeneralDefinitivo,
-          desempeno: rep.summary.desempenoGlobal,
-          asistenciaTasa: rep.attendance.tasa,
-          ausentes: rep.attendance.ausente,
-        };
+          promedio: est.promedio,
+          desempeno: est.desempeno,
+          asistenciaTasa: est.asistenciaTasa,
+          ausentes: est.ausentes,
+        }];
       });
       setStatuses(lista);
     } catch {
@@ -116,7 +90,9 @@ export function useAcademicRisk() {
     } finally {
       setLoading(false);
     }
-  }, [instId, anio, conNotas, studentGrades, grades]);
+    // `marks` como dependencia: tras registrar notas el resumen se recalcula.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instId, anio, students, studentGrades, grades, marks]);
 
   useEffect(() => {
     loadStatus();

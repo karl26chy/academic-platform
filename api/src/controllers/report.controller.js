@@ -77,3 +77,12 @@ export async function getBulkReportPDF(req, res, next) {
     next(err);
   }
 }
+
+/** Estado académico anual de toda la institución (resumen del admin). */
+export async function getInstitutionStatus(req, res, next) {
+  try {
+    res.json(await reportService.getInstitutionYearStatus(req.user, req.params.institutionId, req.query.anio));
+  } catch (err) {
+    next(err);
+  }
+}

@@ -34,10 +34,15 @@ function weightedAverage(marks) {
  * Nota del boletín anual con UNA cifra decimal (4.36 → 4.4), redondeando la
  * mitad hacia arriba (4.35 → 4.4). Se usa la notación exponencial porque
  * 4.35 * 10 en binario da 43.4999… y Math.round lo bajaría a 4.3.
+ *
+ * Antes se recorta el ruido binario de las sumas: (5 + 4.7 + 4.7 + 4.9 +
+ * 4.9 + 4.3) / 6 debería ser 4.75 pero da 4.7499999999999…, y sin este paso
+ * salía 4.7 en vez de 4.8 (y el resultado dependía del orden de las materias).
  */
 export function notaBoletin(valor) {
   if (valor === null || valor === undefined) return null;
-  return Number(`${Math.round(Number(`${valor}e1`))}e-1`);
+  const limpio = Number(Number(valor).toFixed(10));
+  return Number(`${Math.round(Number(`${limpio}e1`))}e-1`);
 }
 
 function edadDesde(fechaNacimiento) {
@@ -496,3 +501,101 @@ export async function getYearReport(user, studentId, anio) {
 }
 
 
+
+/**
+ * Estado académico anual de TODOS los estudiantes (con notas) de una
+ * institución, para el resumen del admin (estudiantes en riesgo y destacados).
+ *
+ * Antes el navegador pedía el boletín anual de cada estudiante por separado
+ * (N peticiones de ~20 consultas). Aquí se resuelve con un puñado de
+ * consultas en bloque y la MISMA regla del boletín anual:
+ *  · valoración de un período = promedio ponderado de sus notas, solo si la
+ *    materia tiene evaluaciones en ese período; las definitivas cargadas a
+ *    mano ("Notas boletín") la reemplazan;
+ *  · cada valoración con una cifra decimal; definitiva = promedio de las
+ *    valoraciones existentes; promedio general = promedio de las definitivas;
+ *  · asistencia = suma de los cuatro períodos del año.
+ * La prueba de equivalencia (tests) compara estudiante por estudiante con
+ * getYearReport, para que ambas reglas no se separen.
+ */
+export async function getInstitutionYearStatus(user, institucionId, anio) {
+  if (!user) throw new HttpError(401, 'No autorizado. Inicia sesión.');
+  const esSuper = user.rol === 'super_admin';
+  if (!esSuper && !(user.rol === 'admin' && user.institucion_id === institucionId)) {
+    throw new HttpError(403, 'Solo el administrador de la institución puede ver su estado académico.');
+  }
+  if (!anio || !Number.isInteger(Number(anio))) throw new HttpError(400, 'Falta anio.');
+
+  const institution = await findRaw('institutions', institucionId);
+  if (!institution) throw new HttpError(404, 'Institución no encontrada.');
+  const escalaMaxima = escalaDe(institution);
+
+  const [estudiantes, dbPeriods, asignaciones] = await Promise.all([
+    repo.studentsWithMarksOf(institucionId),
+    repo.periodsOfYear(institucionId, anio),
+    repo.assignmentsOfInstitution(institucionId),
+  ]);
+  // Mismos 4 períodos que el boletín: el primero real con cada número, o vacío.
+  const periodos = [1, 2, 3, 4].map(num => dbPeriods.find(p => Number(p.numero) === num) ?? null);
+  const periodIds = periodos.filter(Boolean).map(p => p.id);
+  const studentIds = estudiantes.map(e => e.id);
+
+  const [notas, evaluadas, asistencias, cargadas] = await Promise.all([
+    repo.marksOfStudentsInPeriods(studentIds, periodIds),
+    repo.evaluatedClassesInPeriods(institucionId, periodIds),
+    repo.attendanceCountsOfStudents(studentIds, periodIds),
+    finalGradesRepo.ofStudentsYear(studentIds, anio),
+  ]);
+
+  const materiasDeGrado = new Map();
+  for (const a of asignaciones) {
+    if (!materiasDeGrado.has(a.grado_id)) materiasDeGrado.set(a.grado_id, new Set());
+    materiasDeGrado.get(a.grado_id).add(a.materia_id);
+  }
+  const conEvaluacion = new Set(evaluadas.map(e => `${e.grado_id}|${e.materia_id}|${e.periodo_id}`));
+  const notasDe = new Map(); // estudiante|materia|periodo → [{nota, porcentaje}]
+  for (const n of notas) {
+    const k = `${n.estudiante_id}|${n.materia_id}|${n.periodo_id}`;
+    if (!notasDe.has(k)) notasDe.set(k, []);
+    notasDe.get(k).push({ nota: Number(n.nota), porcentaje: Number(n.porcentaje) });
+  }
+  const cargadaDe = new Map(cargadas.map(c => [`${c.estudiante_id}|${c.materia_id}|${c.numero}`, c.nota]));
+  const asistenciaDe = new Map();
+  for (const a of asistencias) {
+    const t = asistenciaDe.get(a.estudiante_id) ?? { presente: 0, ausente: 0, justificada: 0 };
+    if (a.estado in t) t[a.estado] += a.n;
+    asistenciaDe.set(a.estudiante_id, t);
+  }
+
+  return estudiantes.map(({ id, grado_id }) => {
+    const materias = grado_id ? [...(materiasDeGrado.get(grado_id) ?? [])] : [];
+    const definitivas = [];
+    for (const materiaId of materias) {
+      const valoraciones = [];
+      periodos.forEach((periodo, i) => {
+        let valor = null;
+        if (periodo && conEvaluacion.has(`${grado_id}|${materiaId}|${periodo.id}`)) {
+          const marks = notasDe.get(`${id}|${materiaId}|${periodo.id}`);
+          if (marks?.length) valor = weightedAverage(marks);
+        }
+        const cargada = cargadaDe.get(`${id}|${materiaId}|${i + 1}`);
+        if (cargada !== undefined) valor = cargada;
+        if (valor !== null) valoraciones.push(notaBoletin(valor));
+      });
+      if (valoraciones.length) definitivas.push(notaBoletin(valoraciones.reduce((a, b) => a + b, 0) / valoraciones.length));
+    }
+    const promedio = definitivas.length
+      ? notaBoletin(definitivas.reduce((a, b) => a + b, 0) / definitivas.length)
+      : null;
+    // Igual que el boletín: sin grado no se cuenta la asistencia.
+    const asis = (grado_id && asistenciaDe.get(id)) || { presente: 0, ausente: 0, justificada: 0 };
+    const total = asis.presente + asis.ausente + asis.justificada;
+    return {
+      studentId: id,
+      promedio,
+      desempeno: desempeno(promedio, escalaMaxima),
+      asistenciaTasa: total === 0 ? 0 : Math.round((asis.presente / total) * 100),
+      ausentes: asis.ausente,
+    };
+  });
+}

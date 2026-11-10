@@ -682,7 +682,70 @@ export default async function reportsSuite(world) {
     equal(notaBoletin(4.25), 4.3, '4.25 → 4.3');
     equal(notaBoletin(4.34), 4.3, '4.34 → 4.3');
     equal(notaBoletin(9.96), 10, '9.96 → 10');
+    // Casos reales: el promedio "4.75" llega como 4.7499999… por la suma en binario.
+    equal(notaBoletin((5 + 4.7 + 4.7 + 4.9 + 4.9 + 4.3) / 6), 4.8, '(5+4.7+4.7+4.9+4.9+4.3)/6 = 4.75 → 4.8');
+    equal(notaBoletin((4.5 + 4.4 + 4.7 + 4.3 + 4.2 + 4.6) / 6), 4.5, '(4.5+4.4+4.7+4.3+4.2+4.6)/6 = 4.45 → 4.5');
+    equal(notaBoletin(4.749999999999999), 4.8, 'ruido binario por debajo de la mitad');
     equal(notaBoletin(null), null, 'sin nota → null');
+  });
+
+  // ---- Estado académico de toda la institución (resumen del admin) -------------
+
+  suite('Estado académico institucional (riesgo y destacados)');
+
+  await test('una sola petición da lo mismo que el boletín anual de cada estudiante', async () => {
+    const ctx = await claseEnCuartoPeriodo(); // P4 abierto con una nota 4.0 del estudiante 1
+    // Estudiante 2: dos notas con distinto peso en P4 (promedio ponderado con decimales).
+    await addMark(ctx, ctx.student2.id, 2.4, 30, ctx.p4);
+    await addMark(ctx, ctx.student2.id, 3.17, 70, ctx.p4);
+    // Definitivas cargadas a mano para P1–P3 del estudiante 1.
+    await put(ctx.ruta, { notas: [
+      { estudiante_id: ctx.student.id, numero: 1, nota: 3.46 },
+      { estudiante_id: ctx.student.id, numero: 3, nota: 4.25 },
+    ] }, ctx.teacherToken);
+    // Asistencia en P4 (una falla y una justificada del estudiante 2).
+    const base = { materia_id: ctx.subject.id, grado_id: ctx.grade.id, periodo_id: ctx.p4.id, registrado_por: ctx.teacher.id };
+    for (const [est, fecha, estado] of [
+      [ctx.student.id, '2026-10-01', 'presente'], [ctx.student2.id, '2026-10-01', 'ausente'],
+      [ctx.student2.id, '2026-10-02', 'justificada'], [ctx.student2.id, '2026-10-03', 'presente'],
+    ]) {
+      const r = await post('/attendance', { ...base, estudiante_id: est, fecha, estado }, su);
+      track(world, 'attendance', r.data.id);
+    }
+    // Un tercer estudiante matriculado pero sin notas: no entra en el resumen.
+    const sinNotas = (await post('/users', {
+      email: `sinnotas.${world.id}.${seq}@test.local`, password: world.password, rol: 'student', nombre: 'Sin', apellido: 'Notas',
+      institucion_id: ctx.inst.id, tipo_documento: 'TI', identificacion: `IDSN${world.id}-${seq++}`, activo: true,
+    }, su)).data;
+    track(world, 'users', sinNotas.id);
+    track(world, 'student_grades', (await post('/student_grades', { estudiante_id: sinNotas.id, grado_id: ctx.grade.id }, su)).data.id);
+
+    const res = await get(`/institutions/${ctx.inst.id}/academic-status?anio=2026`, ctx.adminToken);
+    equal(res.status, 200, 'status');
+    equal(res.data.length, 2, 'solo los estudiantes con notas');
+    notOk(res.data.some(s => s.studentId === sinNotas.id), 'el estudiante sin notas no aparece');
+
+    for (const est of res.data) {
+      const boletin = (await get(`/students/${est.studentId}/report?anio=2026`, ctx.adminToken)).data;
+      equal(est.promedio, boletin.summary.promedioGeneralDefinitivo, `promedio igual al boletín (${est.studentId})`);
+      equal(est.desempeno, boletin.summary.desempenoGlobal, 'desempeño igual al boletín');
+      equal(est.asistenciaTasa, boletin.attendance.tasa, 'tasa de asistencia igual al boletín');
+      equal(est.ausentes, boletin.attendance.ausente, 'ausencias iguales al boletín');
+    }
+    const e1 = res.data.find(s => s.studentId === ctx.student.id);
+    equal(e1.promedio, 3.9, 'estudiante 1: (3.5 + 4.3 + 4.0) / 3 = 3.93 → 3.9');
+  });
+
+  await test('estado institucional: solo el admin de la institución (o super admin)', async () => {
+    const ctx = await mkInstitution(5, 3);
+    const ruta = `/institutions/${ctx.inst.id}/academic-status?anio=2026`;
+    expectError(await get(ruta, world.tokens.adminA), 403);
+    expectError(await get(ruta, world.tokens.teacherA), 403);
+    expectError(await get(ruta, world.tokens.studentA), 403);
+    expectError(await get(ruta), 401);
+    expectError(await get(`/institutions/${ctx.inst.id}/academic-status`, ctx.adminToken), 400, 'Falta anio.');
+    equal((await get(ruta, su)).status, 200, 'super admin');
+    equal((await get(ruta, ctx.adminToken)).status, 200, 'su admin');
   });
 
   // ---- Generación masiva de boletines (GET /grades/:gradeId/bulk-report/pdf) ----
