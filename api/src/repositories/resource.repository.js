@@ -239,23 +239,6 @@ export async function countPeriodDependencies(periodId) {
   return rows[0];
 }
 
-/** Registros académicos asociados a un docente (para evitar borrados destructivos). */
-export async function countTeacherDependencies(teacherId) {
-  const { rows } = await pool.query(
-    `SELECT
-       (SELECT COUNT(*) FROM assignments WHERE "profesor_id" = $1)::int AS asignaciones,
-       (SELECT COUNT(*) FROM evaluations WHERE "creado_por" = $1)::int AS evaluaciones,
-       (SELECT COUNT(*) FROM marks WHERE "registrado_por" = $1)::int AS notas,
-       (SELECT COUNT(*) FROM attendance WHERE "registrado_por" = $1)::int AS asistencias,
-       (SELECT COUNT(*) FROM citations WHERE "creado_por" = $1)::int AS citas,
-       (SELECT COUNT(*) FROM subject_achievements WHERE "updated_by" = $1)::int AS logros,
-       (SELECT COUNT(*) FROM student_observations WHERE "updated_by" = $1)::int AS observaciones,
-       (SELECT COUNT(*) FROM messages WHERE "remitente_id" = $1 OR "destinatario_id" = $1)::int AS mensajes`,
-    [teacherId]
-  );
-  return rows[0];
-}
-
 /**
  * Elimina o desactiva a un docente de forma transaccional y atómica,
  * evitando condiciones de carrera entre la comprobación de dependencias y el borrado.
@@ -410,15 +393,6 @@ export async function periodOfInstitutionByNameAndYear(institucionId, nombre, an
     [institucionId, nombre, anio]
   );
   return rows[0] || null;
-}
-
-/** Periodos de una institución, ordenados por año y número. */
-export async function periodsOfInstitution(institucionId) {
-  const { rows } = await pool.query(
-    `SELECT * FROM academic_periods WHERE "institucion_id" = $1 ORDER BY "anio" DESC, "numero" ASC`,
-    [institucionId]
-  );
-  return rows;
 }
 
 /**

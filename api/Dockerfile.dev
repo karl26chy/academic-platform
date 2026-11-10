@@ -6,7 +6,6 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY scripts ./scripts
-COPY assets ./assets
 
 RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
 ENV PUPPETEER_SKIP_DOWNLOAD=true

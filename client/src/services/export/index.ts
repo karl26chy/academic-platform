@@ -1,2 +1,2 @@
-export { exportToExcel, exportBoletinToExcel } from './excel';
-export type { ExportTable, BoletinData, BoletinMateria, Row } from './types';
+export { exportToExcel } from './excel';
+export type { ExportTable, Row } from './types';

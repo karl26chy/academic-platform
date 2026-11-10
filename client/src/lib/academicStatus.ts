@@ -158,18 +158,3 @@ export function getStudentAcademicStatus(
   return 'Requiere atención';
 }
 
-/** Devuelve las clases CSS del badge correspondiente al estado académico. */
-export function academicStatusBadgeClass(status: AcademicTrackingStatus): string {
-  switch (status) {
-    case 'Buen rendimiento':
-      return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-    case 'En seguimiento':
-      return 'bg-amber-100 text-amber-700 border border-amber-200';
-    case 'Requiere atención':
-      return 'bg-red-100 text-red-700 border border-red-200';
-    case 'Sin notas':
-    default:
-      return 'bg-gray-100 text-gray-600 border border-gray-200';
-  }
-}
-

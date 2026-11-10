@@ -1,11 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useApp } from '../../../context/useApp';
 import { averageBySubject, weightedAverage } from '../../../lib/grades';
-import { attendanceRateStrict, countByStatus } from '../../../lib/attendance';
-import { fileSlug, getAge, gradeLabel, studentFullName } from '../../../lib/people';
-import { documentoCompleto } from '../../../lib/documentTypes';
-import type { BoletinData } from '../../../services/export';
-import type { User } from '../../../types';
+import { attendanceRateStrict } from '../../../lib/attendance';
+import { gradeLabel } from '../../../lib/people';
 
 /** Datos derivados de la consola institucional del administrador. */
 export function useAdminDashboard() {
@@ -67,46 +64,7 @@ export function useAdminDashboard() {
 
   const getStudentAttendanceRate = (studId: string) => attendanceRateStrict(attendanceOf(studId));
 
-  /** Arma el boletín informativo de un estudiante para exportarlo. */
-  const buildBoletinData = (student: User): BoletinData => {
-    const studentMarks = marksOf(student.id);
-
-    const materias = subjects
-      .map(subj => {
-        const subjMarks = studentMarks.filter(m => m.materia_id === subj.id);
-        if (subjMarks.length === 0) return null;
-        const promedio = weightedAverage(subjMarks);
-        const passing = currentInstitution
-          ? promedio >= currentInstitution.nota_minima_aprobacion
-          : true;
-        return {
-          nombre: subj.nombre,
-          evaluaciones: subjMarks.length,
-          promedio,
-          estado: passing ? 'Aprobado' : 'Reprobado',
-        };
-      })
-      .filter((m): m is NonNullable<typeof m> => m !== null);
-
-    const counts = countByStatus(attendanceOf(student.id));
-
-    return {
-      institucion: currentInstitution?.nombre || '',
-      estudiante: studentFullName(student),
-      identificacion: student.identificacion || 'N/R',
-      documento: documentoCompleto(student.tipo_documento, student.identificacion),
-      grado: getStudentGradeLabel(student.id),
-      edad: getAge(student.fecha_nacimiento),
-      genero: student.genero || 'N/E',
-      materias,
-      promedioGeneral: getStudentAverage(student.id),
-      notaMinima: currentInstitution?.nota_minima_aprobacion ?? 0,
-      asistenciaTasa: getStudentAttendanceRate(student.id),
-      ausencias: counts.ausente,
-      justificadas: counts.justificada,
-      fileName: `boletin_${fileSlug(student)}`,
-    };
-  };
+;
 
   return {
     currentInstitution,
@@ -123,7 +81,6 @@ export function useAdminDashboard() {
     getStudentGradeLabel,
     getStudentAverage,
     getStudentAttendanceRate,
-    buildBoletinData,
     marksOf,
     attendanceOf,
   };

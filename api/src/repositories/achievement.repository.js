@@ -30,16 +30,6 @@ export async function upsertAchievement(assignmentId, periodoId, texto, updatedB
   return rows[0];
 }
 
-export async function getAchievementsByGrade(gradoId, periodoId) {
-  const { rows } = await pool.query(
-    `SELECT sa.* FROM subject_achievements sa
-     JOIN assignments a ON a.id = sa.assignment_id
-     WHERE a.grado_id = $1 AND sa.periodo_id = $2`,
-    [gradoId, periodoId]
-  );
-  return rows;
-}
-
 export async function assignmentById(id) {
   const { rows } = await pool.query(`SELECT * FROM assignments WHERE id = $1`, [id]);
   return rows[0] || null;

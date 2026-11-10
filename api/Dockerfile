@@ -12,7 +12,6 @@ RUN npm ci --omit=dev
 COPY schema.sql ./
 COPY src ./src
 COPY scripts ./scripts
-COPY assets ./assets
 
 ENV NODE_ENV=production
 

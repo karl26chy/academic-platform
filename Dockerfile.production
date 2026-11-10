@@ -28,7 +28,6 @@ RUN npm ci --omit=dev
 COPY api/schema.sql ./
 COPY api/src ./src
 COPY api/scripts ./scripts
-COPY api/assets ./assets
 
 # Frontend compilado (desde Stage 1)
 COPY --from=frontend-build /app/dist ./client/dist
