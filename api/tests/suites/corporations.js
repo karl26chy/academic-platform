@@ -75,20 +75,20 @@ export default async function corporationsSuite(world) {
     equal(r.status, 201, 'creado');
     grupoNoche = r.data;
     track(world, 'grades', r.data.id);
-    equal(r.data.nombre, 'Auxiliar en Enfermería · Noche · Nivel 1', 'nombre automático');
+    equal(r.data.nombre, 'Auxiliar en Enfermería · Noche · Semestre 1', 'nombre automático');
     equal(r.data.tipo_grado, null, 'sin "tipo" de colegio');
 
     const m = await crearGrupo({ programa_id: enfermeria.id, jornada: 'manana', nivel: 1, nombre: 'ignorado' });
     grupoManana = m.data;
     track(world, 'grades', m.data.id);
-    equal(m.data.nombre, 'Auxiliar en Enfermería · Mañana · Nivel 1', 'mismo programa en otra jornada');
+    equal(m.data.nombre, 'Auxiliar en Enfermería · Mañana · Semestre 1', 'mismo programa en otra jornada');
   });
 
   await test('grupos: sin duplicados, nivel obligatorio en técnicos y sin nivel en cursos cortos', async () => {
     expectError(await crearGrupo({ programa_id: enfermeria.id, jornada: 'noche', nivel: 1 }), 409,
-      'El grupo "Auxiliar en Enfermería · Noche · Nivel 1" ya existe.');
+      'El grupo "Auxiliar en Enfermería · Noche · Semestre 1" ya existe.');
     expectError(await crearGrupo({ programa_id: enfermeria.id, jornada: 'noche' }), 400,
-      'El nivel de un programa técnico debe ser un número entre 1 y 20.');
+      'El semestre de un programa técnico debe ser un número entre 1 y 20.');
     expectError(await crearGrupo({ programa_id: enfermeria.id, jornada: 'madrugada', nivel: 1 }), 400,
       'Elige la jornada: mañana, tarde, noche o fin de semana.');
     const corto = await crearGrupo({ programa_id: maquillaje.id, jornada: 'fin_de_semana', nivel: 3 });
@@ -114,7 +114,7 @@ export default async function corporationsSuite(world) {
     const r = await put(`/programs/${enfermeria.id}`, { nombre: 'Auxiliar de Enfermería' }, adminTok);
     equal(r.status, 200, 'renombrado');
     const g = (await get(`/grades/${grupoNoche.id}`, adminTok)).data;
-    equal(g.nombre, 'Auxiliar de Enfermería · Noche · Nivel 1', 'el grupo tomó el nombre nuevo');
+    equal(g.nombre, 'Auxiliar de Enfermería · Noche · Semestre 1', 'el grupo tomó el nombre nuevo');
     expectError(await del(`/programs/${enfermeria.id}`, adminTok), 409,
       'No se puede eliminar el programa porque tiene 2 grupo(s). Desactívalo en su lugar.');
   });

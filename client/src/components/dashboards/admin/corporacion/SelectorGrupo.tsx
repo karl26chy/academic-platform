@@ -63,10 +63,10 @@ export const SelectorGrupo: React.FC<Props> = ({ grupos, programs, value, onChan
           </select>
         </Field>
         {!esCorto && (
-          <Field label="Nivel">
+          <Field label="Semestre">
             <select value={nivel} onChange={filtrar(setNivel)} className={INPUT}>
               <option value="">Todos</option>
-              {niveles.map(n => <option key={n} value={n}>Nivel {n}</option>)}
+              {niveles.map(n => <option key={n} value={n}>Semestre {n}</option>)}
             </select>
           </Field>
         )}

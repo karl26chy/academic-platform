@@ -17,11 +17,11 @@ export const esCorporacion = (institucion) => institucion?.tipo === 'corporacion
 
 /**
  * Nombre del grupo, armado siempre igual para que no haya variantes:
- * "Auxiliar en Enfermería · Noche · Nivel 2" (los cursos cortos no tienen nivel).
+ * "Auxiliar en Enfermería · Noche · Semestre 2" (los cursos cortos no tienen semestre).
  */
 export function nombreGrupo(programa, jornada, nivel) {
   const partes = [programa.nombre, JORNADAS[jornada] ?? jornada];
-  if (nivel) partes.push(`Nivel ${nivel}`);
+  if (nivel) partes.push(`Semestre ${nivel}`);
   return partes.join(' · ');
 }
 

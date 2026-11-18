@@ -35,7 +35,7 @@ export async function validateGrade(data, existingRow) {
   if (programa.tipo === 'tecnico') {
     nivel = Number(data.nivel ?? existingRow?.nivel);
     if (!Number.isInteger(nivel) || nivel < 1 || nivel > NIVEL_MAXIMO) {
-      throw new HttpError(400, `El nivel de un programa técnico debe ser un número entre 1 y ${NIVEL_MAXIMO}.`);
+      throw new HttpError(400, `El semestre de un programa técnico debe ser un número entre 1 y ${NIVEL_MAXIMO}.`);
     }
   }
 

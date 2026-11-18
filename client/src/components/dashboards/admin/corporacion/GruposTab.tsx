@@ -8,11 +8,11 @@ import { JORNADAS, NIVEL_MAXIMO, TIPOS_PROGRAMA, nombreGrupo, ordenarGrupos } fr
 import { usePrograms } from './usePrograms';
 import type { Grade, Jornada, TipoPrograma } from '../../../../types';
 
-const NIVELES = Array.from({ length: NIVEL_MAXIMO }, (_, i) => i + 1);
+const SEMESTRES = Array.from({ length: NIVEL_MAXIMO }, (_, i) => i + 1);
 
 /**
- * Grupos de la corporación: programa + jornada + nivel. El mismo programa en
- * dos jornadas son grupos distintos; los cursos cortos no tienen nivel. El
+ * Grupos de la corporación: programa + jornada + semestre. El mismo programa en
+ * dos jornadas son grupos distintos; los cursos cortos no tienen semestre. El
  * nombre lo arma la plataforma, nadie lo escribe a mano.
  */
 export const GruposTab: React.FC = () => {
@@ -88,9 +88,9 @@ export const GruposTab: React.FC = () => {
               </select>
             </Field>
             {programa?.tipo === 'tecnico' && (
-              <Field label="Nivel">
+              <Field label="Semestre">
                 <select value={nivel} onChange={e => setNivel(e.target.value)} className={INPUT}>
-                  {NIVELES.map(n => <option key={n} value={n}>Nivel {n}</option>)}
+                  {SEMESTRES.map(n => <option key={n} value={n}>Semestre {n}</option>)}
                 </select>
               </Field>
             )}

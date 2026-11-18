@@ -21,6 +21,7 @@ export const TIPOS_PROGRAMA: Record<TipoPrograma, string> = {
 };
 
 export const NIVEL_MAXIMO = 20;
+export const SEMESTRE_MAXIMO = 20;
 
 /** Vocabulario de la institución: los colegios conservan exactamente el de siempre. */
 export interface Vocabulario {
@@ -39,9 +40,9 @@ export function vocabulario(inst?: Pick<Institution, 'tipo'> | null): Vocabulari
     : { corporacion: false, materia: 'Materia', materias: 'Materias', grado: 'Grado', grados: 'Grados', periodo: 'Periodo', periodos: 'Periodos' };
 }
 
-/** Mismo nombre que arma la API: "Auxiliar en Enfermería · Noche · Nivel 2". */
+/** Mismo nombre que arma la API: "Auxiliar en Enfermería · Noche · Semestre 2". */
 export function nombreGrupo(programa: Pick<Program, 'nombre'>, jornada: Jornada, nivel?: number | null): string {
-  return [programa.nombre, JORNADAS[jornada], nivel ? `Nivel ${nivel}` : null].filter(Boolean).join(' · ');
+  return [programa.nombre, JORNADAS[jornada], nivel ? `Semestre ${nivel}` : null].filter(Boolean).join(' · ');
 }
 
 /** Compara nombres sin tildes, mayúsculas ni espacios de más (igual que la API). */

@@ -18,8 +18,8 @@ describe('leerListaPegada', () => {
 });
 
 describe('nombreGrupo', () => {
-  test('técnico con nivel y curso corto sin nivel', () => {
-    assert.equal(nombreGrupo({ nombre: 'Auxiliar en Enfermería' }, 'noche', 2), 'Auxiliar en Enfermería · Noche · Nivel 2');
+  test('técnico con semestre y curso corto sin semestre', () => {
+    assert.equal(nombreGrupo({ nombre: 'Auxiliar en Enfermería' }, 'noche', 2), 'Auxiliar en Enfermería · Noche · Semestre 2');
     assert.equal(nombreGrupo({ nombre: 'Maquillajes' }, 'fin_de_semana', null), 'Maquillajes · Fin de semana');
   });
 });
@@ -37,7 +37,7 @@ describe('etiquetas en corporaciones sin cambiar las de colegios', () => {
   test('gradeLabel: colegio 6to "A"; grupo solo con su nombre', () => {
     const base = { id: '1', institucion_id: 'i' };
     assert.equal(gradeLabel({ ...base, nombre: '6to', tipo_grado: 'A' }), '6to "A"');
-    assert.equal(gradeLabel({ ...base, nombre: 'Belleza · Noche · Nivel 1', tipo_grado: null }), 'Belleza · Noche · Nivel 1');
+    assert.equal(gradeLabel({ ...base, nombre: 'Belleza · Noche · Semestre 1', tipo_grado: null }), 'Belleza · Noche · Semestre 1');
   });
 
   test('periodLabel: periodo de colegio igual que antes; semestre "2027-1"', () => {

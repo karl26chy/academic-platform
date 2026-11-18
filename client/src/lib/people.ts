@@ -27,7 +27,7 @@ export const initials = (user: Pick<User, 'nombre' | 'apellido'>): string =>
 
 /**
  * Etiqueta legible de un grado: 6to "A". Los grupos de una corporación no
- * tienen tipo y su nombre ya es completo ("Belleza · Noche · Nivel 1").
+ * tienen tipo y su nombre ya es completo ("Belleza · Noche · Semestre 1").
  */
 export const gradeLabel = (grade?: Grade | null): string =>
   grade ? (grade.tipo_grado ? `${grade.nombre} "${grade.tipo_grado}"` : grade.nombre) : '';

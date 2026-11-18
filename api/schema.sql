@@ -306,6 +306,11 @@ ALTER TABLE grades ADD COLUMN IF NOT EXISTS nivel INTEGER;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_grades_grupo_corporacion
   ON grades (programa_id, jornada, COALESCE(nivel, 0)) WHERE programa_id IS NOT NULL;
 
+-- Actualiza grupos que usaban "Nivel" a "Semestre"
+UPDATE grades
+SET nombre = REPLACE(nombre, ' · Nivel ', ' · Semestre ')
+WHERE programa_id IS NOT NULL AND nombre LIKE '% · Nivel %';
+
 CREATE TABLE IF NOT EXISTS certificates (
   id TEXT PRIMARY KEY,
   institucion_id TEXT NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
