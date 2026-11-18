@@ -7,7 +7,7 @@ import { EditAssignmentModal } from './EditAssignmentModal';
 import { EditStudentGradeModal } from './EditStudentGradeModal';
 import type { Assignment, Grade, Institution, StudentGrade, Subject, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
-import { compareStudents, sortStudents, studentFullName } from '../../../lib/people';
+import { compareStudents, sortStudents, studentFullName, gradeLabel } from '../../../lib/people';
 
 interface AssignmentsTabProps {
   institutions: Institution[];
@@ -162,7 +162,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                 <option value="">-- Seleccionar --</option>
                 {grades
                   .filter(g => g.institucion_id === assignInstId)
-                  .map(g => <option key={g.id} value={g.id}>{g.nombre} "{g.tipo_grado}"</option>)}
+                  .map(g => <option key={g.id} value={g.id}>{gradeLabel(g)}</option>)}
               </select>
             </Field>
 
@@ -239,7 +239,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                 <option value="">-- Seleccionar --</option>
                 {grades.filter(g => g.institucion_id === studInstId).map(g => (
                   <option key={g.id} value={g.id}>
-                    {g.nombre} "{g.tipo_grado}"
+                    {gradeLabel(g)}
                   </option>
                 ))}
               </select>

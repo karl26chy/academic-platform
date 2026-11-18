@@ -1,7 +1,8 @@
 import { HttpError } from '../shared/http-error.js';
 import * as repo from '../repositories/period-final-grades.repository.js';
 import { assignmentById } from '../repositories/achievement.repository.js';
-import { gradingScaleFor } from '../repositories/resource.repository.js';
+import { findRaw, gradingScaleFor } from '../repositories/resource.repository.js';
+import { esCorporacion } from '../shared/corporacion.js';
 import { authorizeAssignment } from '../policies/annotations.policy.js';
 
 /**
@@ -23,6 +24,10 @@ async function claseAutorizada(user, assignmentId) {
   const assignment = await assignmentById(assignmentId);
   if (!assignment) throw new HttpError(404, 'Asignación no encontrada.');
   authorizeAssignment(user, assignment);
+  // Es una solución para los periodos 1 a 3 de los colegios: no aplica a corporaciones.
+  if (esCorporacion(await findRaw('institutions', assignment.institucion_id))) {
+    throw new HttpError(400, 'Las notas de boletín no aplican a las corporaciones.');
+  }
   return assignment;
 }
 

@@ -1,6 +1,7 @@
 import config from './config/index.js';
 import pool from './db/pool.js';
 import { createApp } from './app.js';
+import { asegurarEsquemaCorporaciones } from './db/esquema-corporaciones.js';
 
 const MAX_ATTEMPTS = 5;
 const RETRY_DELAY_MS = 2500;
@@ -32,6 +33,9 @@ async function waitForDatabase() {
 
 async function start() {
   await waitForDatabase();
+
+  // Tablas y columnas de corporaciones (solo agrega; idempotente).
+  await asegurarEsquemaCorporaciones();
 
   createApp().listen(config.port, '0.0.0.0', () => {
     console.log(`>> API corriendo en http://localhost:${config.port}`);

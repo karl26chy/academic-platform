@@ -7,6 +7,8 @@ import { validateAttendance } from './attendance.validator.js';
 import { validateSubject } from './subjects.validator.js';
 import { validateAssignment } from './assignments.validator.js';
 import { validatePeriod } from './periods.validator.js';
+import { validateGrade } from './grades.validator.js';
+import { validateProgram } from './programs.validator.js';
 
 /** Un validador por recurso; los que no aparecen no tienen reglas propias. */
 const validatorByResource = {
@@ -19,6 +21,8 @@ const validatorByResource = {
   subjects: validateSubject,
   assignments: validateAssignment,
   academic_periods: validatePeriod,
+  grades: validateGrade,
+  programs: validateProgram,
 };
 
 export async function validateRow(resource, data, existingRow) {

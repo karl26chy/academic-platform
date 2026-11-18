@@ -1,5 +1,7 @@
 import { HttpError } from '../shared/http-error.js';
+import { esCorporacion } from '../shared/corporacion.js';
 import {
+  findRaw,
   institutionById,
   countPeriodDependencies,
   periodDuplicateOf,
@@ -53,6 +55,14 @@ export async function validatePeriod(data, existingRow) {
 
   const numero = Number(data.numero ?? existingRow?.numero);
   const anio = Number(data.anio ?? existingRow?.anio);
+
+  // Corporaciones: el período es un semestre (1 o 2) y se llama "2027-1".
+  if (esCorporacion(await findRaw('institutions', institucionId))) {
+    if (numero !== 1 && numero !== 2) {
+      throw new HttpError(400, 'En una corporación el semestre debe ser 1 o 2.');
+    }
+    if (anio) data.nombre = `${anio}-${numero}`;
+  }
   if (numero && anio) {
     const duplicado = await periodDuplicateOf({
       institucion_id: institucionId,

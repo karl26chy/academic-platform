@@ -15,8 +15,17 @@ export interface PeriodLike {
   activo?: boolean;
 }
 
+/**
+ * Semestre de una corporación: la API lo guarda con nombre "2027-1"
+ * (año-número). Un periodo de colegio se llama "Periodo N", nunca así.
+ */
+export function esSemestre(p?: PeriodLike | null): boolean {
+  return !!p && p.numero != null && p.anio != null && p.nombre === `${p.anio}-${p.numero}`;
+}
+
 export function periodLabel(p?: PeriodLike | null): string {
   if (!p) return '';
+  if (esSemestre(p)) return `Semestre ${p.nombre}`;
   const partes: string[] = [];
   if (p.numero !== undefined && p.numero !== null) {
     partes.push(`Periodo ${p.numero}`);

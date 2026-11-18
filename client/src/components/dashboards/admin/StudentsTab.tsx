@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Archive, ChevronDown, ChevronUp, Edit3, Eye, FileText, Filter, Search, UserPlus, X } from 'lucide-react';
 import { Card, EmptyMessage, Field, INPUT, toast } from '../../ui';
 import { useClickOutside } from '../../../hooks/useClickOutside';
-import { getAge, studentFullName } from '../../../lib/people';
+import { getAge, gradeLabel, studentFullName } from '../../../lib/people';
 import { documentoCompleto } from '../../../lib/documentTypes';
+import { esCorporacion } from '../../../lib/corporacion';
 import { applyStudentFilters, countActiveFilters } from '../../../lib/studentFilters';
 import { StudentDetail } from './StudentDetail';
 import { StudentFormModal } from './StudentFormModal';
@@ -45,6 +46,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
   const [formMode, setFormMode] = useState<'new' | User | null>(null);
   const [reportStudent, setReportStudent] = useState<User | null>(null);
   const [boletinMasivoOpen, setBoletinMasivoOpen] = useState(false);
+  const corporacion = esCorporacion(institution);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -166,8 +168,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
             )}
           </button>
 
-          {/* Generación masiva de boletines por grado */}
-          <button
+          {/* Generación masiva de boletines por grado (las corporaciones no tienen boletín) */}
+          {!corporacion && <button
             id="btn-generar-boletines-masivo"
             type="button"
             onClick={() => setBoletinMasivoOpen(true)}
@@ -175,7 +177,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
           >
             <Archive className="h-4 w-4 text-q10-600" />
             Generar boletines
-          </button>
+          </button>}
         </div>
 
         {filtersOpen && (
@@ -201,11 +203,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                   onChange={e => setEdadMax(Number(e.target.value))} className={INPUT}
                 />
               </Field>
-              <Field label="Grado">
+              <Field label={corporacion ? 'Grupo' : 'Grado'}>
                 <select value={gradoId} onChange={e => setGradoId(e.target.value)} className={INPUT}>
                   <option value="">Todos</option>
                   {grades.map(g => (
-                    <option key={g.id} value={g.id}>{g.nombre} "{g.tipo_grado}"</option>
+                    <option key={g.id} value={g.id}>{gradeLabel(g)}</option>
                   ))}
                 </select>
               </Field>
@@ -252,13 +254,13 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
                       {getStudentGradeLabel(s.id)} · {getAge(s.fecha_nacimiento)} años · {s.genero || 'N/E'}
                     </span>
                   </button>
-                  <button
+                  {!corporacion && <button
                     onClick={() => setReportStudent(s)}
                     title="Generar boletín"
                     className="p-1.5 rounded-lg text-gray-400 hover:text-q10-600 hover:bg-q10-50 transition-colors shrink-0"
                   >
                     <FileText className="h-4 w-4" />
-                  </button>
+                  </button>}
                   <button
                     onClick={() => setFormMode(s)}
                     title="Editar estudiante"
@@ -292,7 +294,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({
               average={getStudentAverage(selected.id)}
               attendanceRate={getStudentAttendanceRate(selected.id)}
               getSubjectName={getSubjectName}
-              onGenerateReport={s => setReportStudent(s)}
+              onGenerateReport={corporacion ? undefined : s => setReportStudent(s)}
             />
           )}
         </Card>

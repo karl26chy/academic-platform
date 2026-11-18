@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardTitle, EmptyMessage, TableWrapper, TableHead, TableBody } from '../../ui';
 import { SubjectPerformanceChart, type SubjectChartDatum } from '../../charts/SubjectPerformanceChart';
 import { maxScoreFor } from '../../../lib/grades';
+import { vocabulario } from '../../../lib/corporacion';
 import type { Institution, Mark } from '../../../types';
 
 interface GradesTabProps {
@@ -34,7 +35,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       <Card>
-        <CardTitle>Rendimiento Académico por Materia</CardTitle>
+        <CardTitle>Rendimiento Académico por {vocabulario(institution).materia}</CardTitle>
         {chartData.length === 0 ? (
           <EmptyMessage className="text-sm text-gray-500 py-6">
             Aún no cuentas con calificaciones registradas.
@@ -67,7 +68,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         ) : (
           <TableWrapper>
             <TableHead>
-              <th className="pb-3">Materia</th>
+              <th className="pb-3">{vocabulario(institution).materia}</th>
               <th className="pb-3">Evaluación</th>
               <th className="pb-3">Periodo</th>
               <th className="pb-3">Fecha</th>

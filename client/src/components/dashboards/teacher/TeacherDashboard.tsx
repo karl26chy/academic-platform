@@ -15,6 +15,7 @@ import { LogrosTab } from './LogrosTab';
 import { ObservacionesTab } from './ObservacionesTab';
 import { AcademicTrackingTab } from './AcademicTrackingTab';
 import { NotasBoletinTab } from './NotasBoletinTab';
+import { vocabulario } from '../../../lib/corporacion';
 
 type TeacherTab =
   | 'attendance'
@@ -51,6 +52,9 @@ export const TeacherDashboard: React.FC = () => {
     }
   }, [navigateToTab, setNavigateToTab]);
 
+  // Corporaciones: módulos, grupos y semestres; sin "Notas boletín" (es de colegios).
+  const v = vocabulario(currentInstitution);
+
   const tabs: TabItem<TeacherTab>[] = [
     { id: 'attendance', label: 'Asistencia', icon: <CheckSquare className="h-4 w-4" /> },
     { id: 'marks', label: 'Notas', icon: <Award className="h-4 w-4" /> },
@@ -59,7 +63,7 @@ export const TeacherDashboard: React.FC = () => {
     { id: 'achievements', label: 'Logros', icon: <Star className="h-4 w-4" /> },
     { id: 'observations', label: 'Observaciones', icon: <MessageSquare className="h-4 w-4" /> },
     // TEMPORAL: definitivas de los periodos anteriores a la entrada en uso de la plataforma.
-    { id: 'notasBoletin', label: 'Notas boletín', icon: <FileText className="h-4 w-4" /> },
+    ...(v.corporacion ? [] : [{ id: 'notasBoletin' as const, label: 'Notas boletín', icon: <FileText className="h-4 w-4" /> }]),
     { id: 'citations', label: 'Citaciones', icon: <AlertTriangle className="h-4 w-4" /> },
     { id: 'messages', label: 'Mensajería', icon: <Mail className="h-4 w-4" />, badge: messaging.unreadIncoming },
   ];
@@ -75,10 +79,10 @@ export const TeacherDashboard: React.FC = () => {
 
       <Card className="p-5">
         <label className="block text-xs font-semibold uppercase tracking-wider text-q10-600 mb-2">
-          Selecciona tu Materia y Grado
+          Selecciona tu {v.materia} y {v.grado}
         </label>
         {teacherAssignments.length === 0 ? (
-          <EmptyMessage className="text-sm text-gray-500">No tienes materias asignadas.</EmptyMessage>
+          <EmptyMessage className="text-sm text-gray-500">No tienes {v.materias.toLowerCase()} asignad{v.corporacion ? 'o' : 'a'}s.</EmptyMessage>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {teacherAssignments.map(a => (
@@ -92,7 +96,7 @@ export const TeacherDashboard: React.FC = () => {
                 }`}
               >
                 <span className="font-bold block text-gray-900 text-base">{getSubjectName(a.materia_id)}</span>
-                <span className="text-xs mt-1 block font-medium">Grado: {getGradeName(a.grado_id)}</span>
+                <span className="text-xs mt-1 block font-medium">{v.grado}: {getGradeName(a.grado_id)}</span>
               </button>
             ))}
           </div>
@@ -109,18 +113,18 @@ export const TeacherDashboard: React.FC = () => {
                 </label>
                 <p className="text-sm text-gray-700">
                   <span className="font-bold">{getSubjectName(activeAssignment.materia_id)}</span>
-                  {' — '}Grado {getGradeName(activeAssignment.grado_id)}
+                  {' — '}{v.grado} {getGradeName(activeAssignment.grado_id)}
                 </p>
               </div>
 
               <div className="w-full sm:w-64">
                 {periods.length === 0 ? (
                   <EmptyMessage className="text-xs text-gray-500">
-                    No hay periodos definidos para esta institución.
+                    No hay {v.periodos.toLowerCase()} definidos para esta institución.
                   </EmptyMessage>
                 ) : (
                   <>
-                    <Field label="Periodo académico">
+                    <Field label={v.corporacion ? 'Semestre' : 'Periodo académico'}>
                       <select
                         value={selectedPeriodId}
                         onChange={e => selectPeriod(e.target.value)}
@@ -135,7 +139,7 @@ export const TeacherDashboard: React.FC = () => {
                     </Field>
                     {activePeriod && !activePeriod.activo && (
                       <p className="mt-1 text-[11px] text-red-500 flex items-center gap-1">
-                        <Lock className="h-3 w-3" /> Periodo cerrado: no se pueden crear o modificar evaluaciones/notas.
+                        <Lock className="h-3 w-3" /> {v.periodo} cerrado: no se pueden crear o modificar evaluaciones/notas.
                       </p>
                     )}
                   </>
@@ -209,7 +213,7 @@ export const TeacherDashboard: React.FC = () => {
             <ObservacionesTab students={gradeStudents} period={activePeriod} />
           )}
 
-          {activeTab === 'notasBoletin' && (
+          {!v.corporacion && activeTab === 'notasBoletin' && (
             <NotasBoletinTab
               key={activeAssignment.id}
               assignment={activeAssignment}

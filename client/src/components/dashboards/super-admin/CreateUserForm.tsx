@@ -84,8 +84,9 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       reset();
       showMsg('success', 'Usuario creado.');
       await onChanged();
-    } catch {
-      showMsg('error', 'Error al crear usuario.');
+    } catch (err) {
+      // El servidor dice el motivo (contraseña corta, email inválido, duplicado…).
+      showMsg('error', err instanceof Error ? err.message : 'Error al crear usuario.');
     }
   };
 
@@ -127,7 +128,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         <Field label="Contraseña">
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'} required
+              type={showPassword ? 'text' : 'password'} required minLength={8}
+              placeholder="Mínimo 8 caracteres"
               value={password} onChange={e => setPassword(e.target.value)}
               className="w-full px-3 py-2 pr-10 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none"
             />

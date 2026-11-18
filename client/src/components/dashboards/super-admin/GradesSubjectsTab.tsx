@@ -129,7 +129,7 @@ export const GradesSubjectsTab: React.FC<GradesSubjectsTabProps> = ({
               return (
                 <div key={g.id} className="flex flex-wrap justify-between items-center gap-2 p-3 bg-white rounded-xl border border-gray-200">
                   <span className="text-sm font-semibold text-gray-900 min-w-0 truncate">
-                    Grado {g.nombre} - "{g.tipo_grado}"
+                    {g.tipo_grado ? <>Grado {g.nombre} - "{g.tipo_grado}"</> : g.nombre}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">

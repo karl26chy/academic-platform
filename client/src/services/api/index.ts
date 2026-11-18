@@ -1,7 +1,7 @@
 import { authApi } from './auth.api';
 import { reportApi } from './report.api';
 import { createResourceApi } from './resource.api';
-import { http } from '../http';
+import { http, apiFetch, API_BASE, getAuthToken, ApiError } from '../http';
 
 export { getAuthToken, setAuthToken, UNAUTHORIZED_EVENT, ApiError } from '../http';
 import type {
@@ -18,6 +18,8 @@ import type {
   Evaluation,
   AcademicHistory,
   AcademicPeriod,
+  Program,
+  Certificate,
 } from '../../types';
 
 export const institutions = createResourceApi<Institution>('institutions');
@@ -32,6 +34,36 @@ export const citations = createResourceApi<Citation>('citations');
 export const messages = createResourceApi<Message>('messages');
 export const evaluations = createResourceApi<Evaluation>('evaluations');
 export const academicPeriods = createResourceApi<AcademicPeriod>('academic_periods');
+/** Solo corporaciones: catálogo de programas técnicos y cursos cortos. */
+export const programs = createResourceApi<Program>('programs');
+
+/** Solo corporaciones: certificados PDF que sube el admin y descarga el estudiante. */
+export const certificates = {
+  list: (studentId: string) => http.get<Certificate[]>(`/students/${studentId}/certificates`),
+  upload: (studentId: string, titulo: string, archivo: File) =>
+    apiFetch<Certificate>(`/students/${studentId}/certificates?titulo=${encodeURIComponent(titulo)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/pdf' },
+      body: archivo,
+    }),
+  remove: (id: string) => http.delete<{ ok: boolean }>(`/certificates/${id}`),
+  /** Descarga el PDF con la sesión actual y lo guarda con su título. */
+  download: async (cert: Pick<Certificate, 'id' | 'titulo'>) => {
+    const res = await fetch(`${API_BASE}/certificates/${cert.id}/archivo`, {
+      headers: { Authorization: `Bearer ${getAuthToken() ?? ''}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new ApiError(res.status, 'No se pudo descargar el certificado.');
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${cert.titulo}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+};
 
 /**
  * Fachada estable del API. Mantiene la forma que consumen los componentes

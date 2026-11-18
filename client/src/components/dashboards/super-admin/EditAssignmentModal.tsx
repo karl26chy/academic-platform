@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { api } from '../../../services/api';
 import type { Assignment, Grade, Institution, Subject, User } from '../../../types';
 import type { Feedback } from './useSuperAdmin';
+import { gradeLabel } from '../../../lib/people';
 
 const FIELD = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none';
 const LABEL = 'block text-xs font-medium text-gray-600 mb-1';
@@ -97,7 +98,7 @@ export const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
               <option value="">-- Seleccionar --</option>
               {grades
                 .filter(g => g.institucion_id === assignment.institucion_id)
-                .map(g => <option key={g.id} value={g.id}>{g.nombre} "{g.tipo_grado}"</option>)}
+                .map(g => <option key={g.id} value={g.id}>{gradeLabel(g)}</option>)}
             </select>
           </div>
 

@@ -25,9 +25,12 @@ export const studentFullName = (user?: Pick<User, 'nombre' | 'apellido'> | null)
 export const initials = (user: Pick<User, 'nombre' | 'apellido'>): string =>
   `${user.nombre[0] ?? ''}${user.apellido[0] ?? ''}`;
 
-/** Etiqueta legible de un grado: 6to "A". */
+/**
+ * Etiqueta legible de un grado: 6to "A". Los grupos de una corporación no
+ * tienen tipo y su nombre ya es completo ("Belleza · Noche · Nivel 1").
+ */
 export const gradeLabel = (grade?: Grade | null): string =>
-  grade ? `${grade.nombre} "${grade.tipo_grado}"` : '';
+  grade ? (grade.tipo_grado ? `${grade.nombre} "${grade.tipo_grado}"` : grade.nombre) : '';
 
 /** Nombre de archivo seguro a partir del nombre de una persona. */
 export const fileSlug = (user: Pick<User, 'nombre' | 'apellido'>): string =>

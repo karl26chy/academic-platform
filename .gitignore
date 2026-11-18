@@ -20,6 +20,7 @@ lerna-debug.log*
 # Editor
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~

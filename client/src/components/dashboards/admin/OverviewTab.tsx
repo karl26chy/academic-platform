@@ -4,6 +4,7 @@ import { Card, CardTitle, EmptyMessage, StatCard, TableWrapper, TableHead, Table
 import { SubjectPerformanceChart } from '../../charts/SubjectPerformanceChart';
 import { useAcademicRisk } from './useAcademicRisk';
 import { maxScoreFor } from '../../../lib/grades';
+import { esCorporacion } from '../../../lib/corporacion';
 import type { Institution } from '../../../types';
 
 interface LowPerfSubject {
@@ -34,7 +35,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard label="Total Estudiantes" value={totals.students} valueClassName="text-blue-600" />
         <StatCard label="Total Profesores" value={totals.teachers} valueClassName="text-emerald-600" />
-        <StatCard label="Total Grados" value={totals.grades} valueClassName="text-purple-400" />
+        <StatCard label={esCorporacion(institution) ? 'Total Grupos' : 'Total Grados'} value={totals.grades} valueClassName="text-purple-400" />
         <StatCard
           label="Nota Mín. Aprobación"
           value={institution?.nota_minima_aprobacion.toFixed(1)}
@@ -44,7 +45,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Rendimiento general por materia — ancho completo */}
       <Card>
         <CardTitle icon={<BarChart3 className="h-5 w-5 text-q10-600" />}>
-          Rendimiento General por Materia
+          Rendimiento General por {esCorporacion(institution) ? 'Módulo' : 'Materia'}
         </CardTitle>
         {subjectData.length === 0 ? (
           <EmptyMessage className="text-sm text-gray-500 py-8 text-center">
@@ -169,7 +170,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <Card>
         <div className="mb-4">
           <CardTitle icon={<ShieldAlert className="h-5 w-5 text-amber-500" />} className="">
-            Materias con Rendimiento Deficiente
+            {esCorporacion(institution) ? 'Módulos' : 'Materias'} con Rendimiento Deficiente
           </CardTitle>
         </div>
 
@@ -180,7 +181,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         ) : (
           <TableWrapper>
             <TableHead>
-              <th className="pb-2">Materia</th>
+              <th className="pb-2">{esCorporacion(institution) ? 'Módulo' : 'Materia'}</th>
               <th className="pb-2 text-center">Promedio General</th>
               <th className="pb-2 text-center">Estado</th>
             </TableHead>

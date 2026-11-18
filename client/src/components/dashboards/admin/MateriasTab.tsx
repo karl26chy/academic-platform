@@ -5,6 +5,7 @@ import { Card, CardTitle, EmptyMessage, Field, INPUT, toast } from '../../ui';
 import { ConfirmDeleteModal } from '../super-admin/ConfirmDeleteModal';
 import { EditSubjectModal } from '../super-admin/EditSubjectModal';
 import { useApp } from '../../../context/useApp';
+import { esCorporacion } from '../../../lib/corporacion';
 import type { Subject } from '../../../types';
 
 /** Gestión de las materias de la institución del administrador. */
@@ -18,6 +19,11 @@ export const MateriasTab: React.FC = () => {
   const [deleting, setDeleting] = useState<Subject | null>(null);
 
   const instId = user?.institucion_id;
+  // Corporaciones: las materias se llaman módulos (un módulo se comparte entre grupos).
+  const corp = esCorporacion(currentInstitution);
+  const t = corp
+    ? { creada: 'Módulo creado.', eliminada: 'Módulo eliminado.', crear: 'Crear Módulo', guardar: 'Guardar Módulo', titulo: 'Módulos', vacio: 'Aún no hay módulos creados.', ejemplo: 'Primeros auxilios', una: 'el módulo', eliminar: 'Eliminar Módulo' }
+    : { creada: 'Materia creada.', eliminada: 'Materia eliminada.', crear: 'Crear Materia', guardar: 'Guardar Materia', titulo: 'Materias', vacio: 'Aún no hay materias creadas en tu institución.', ejemplo: 'Matemáticas', una: 'la materia', eliminar: 'Eliminar Materia' };
   const misMaterias = subjects.filter(s => s.institucion_id === instId);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -27,7 +33,7 @@ export const MateriasTab: React.FC = () => {
       await api.createSubject({ nombre: nombre.trim(), descripcion: descripcion || undefined, institucion_id: instId });
       setNombre('');
       setDescripcion('');
-      toast.success('Materia creada.');
+      toast.success(t.creada);
       await refreshData();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al crear materia.');
@@ -39,7 +45,7 @@ export const MateriasTab: React.FC = () => {
     try {
       await api.deleteSubject(deleting.id);
       setDeleting(null);
-      toast.success('Materia eliminada.');
+      toast.success(t.eliminada);
       await refreshData();
     } catch (err) {
       setDeleting(null);
@@ -51,11 +57,11 @@ export const MateriasTab: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
       <Card className="h-fit">
         <CardTitle icon={<Plus className="h-5 w-5 text-q10-600" />} className="mb-6">
-          Crear Materia
+          {t.crear}
         </CardTitle>
         <form onSubmit={handleCreate} className="space-y-4">
           <Field label="Nombre">
-            <input type="text" required value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Matemáticas" className={INPUT} />
+            <input type="text" required value={nombre} onChange={e => setNombre(e.target.value)} placeholder={t.ejemplo} className={INPUT} />
           </Field>
           <Field label="Descripción">
             <input type="text" value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="..." className={INPUT} />
@@ -64,7 +70,7 @@ export const MateriasTab: React.FC = () => {
             type="submit"
             className="w-full py-3 bg-q10-600 hover:bg-q10-700 text-white font-semibold rounded-xl transition-colors"
           >
-            Guardar Materia
+            {t.guardar}
           </button>
           {!instId && (
             <p className="text-xs text-amber-600">No se pudo determinar tu institución.</p>
@@ -74,12 +80,12 @@ export const MateriasTab: React.FC = () => {
 
       <Card className="lg:col-span-2">
         <CardTitle icon={<BookOpen className="h-5 w-5 text-q10-600" />} className="mb-6">
-          Materias de {currentInstitution?.nombre || 'mi institución'}
+          {t.titulo} de {currentInstitution?.nombre || 'mi institución'}
         </CardTitle>
 
         {misMaterias.length === 0 ? (
           <EmptyMessage className="text-sm text-gray-500 py-8">
-            Aún no hay materias creadas en tu institución.
+            {t.vacio}
           </EmptyMessage>
         ) : (
           <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
@@ -121,8 +127,8 @@ export const MateriasTab: React.FC = () => {
 
       {deleting && (
         <ConfirmDeleteModal
-          title="Eliminar Materia"
-          message={<>¿Estás seguro de eliminar la materia <strong>{deleting.nombre}</strong>?</>}
+          title={t.eliminar}
+          message={<>¿Estás seguro de eliminar {t.una} <strong>{deleting.nombre}</strong>?</>}
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
         />

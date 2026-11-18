@@ -5,6 +5,7 @@ import { PeriodForm } from './PeriodForm';
 import { PeriodConfirmModal } from './PeriodConfirmModal';
 import { useAcademicPeriods, type PeriodFormData } from './useAcademicPeriods';
 import { useApp } from '../../../context/useApp';
+import { esCorporacion } from '../../../lib/corporacion';
 import type { AcademicPeriod } from '../../../types';
 
 /** "2026-08-10" → "10/08/2026" (sin depender de zona horaria). */
@@ -20,7 +21,11 @@ type ConfirmAction =
 
 /** Gestión de periodos académicos de la institución del administrador. */
 export const PeriodsTab: React.FC = () => {
-  const { user } = useApp();
+  const { user, currentInstitution } = useApp();
+  // Corporaciones: semestres "2027-1" y "2027-2" en lugar de periodos 1 a 4.
+  const semestre = esCorporacion(currentInstitution);
+  const P = semestre ? 'Semestre' : 'Periodo';
+  const p_ = semestre ? 'semestre' : 'periodo';
   const {
     periods, loading, error,
     create, update, openPeriod, closePeriod, remove, reload,
@@ -86,11 +91,12 @@ export const PeriodsTab: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="h-fit">
           <CardTitle icon={<Plus className="h-5 w-5 text-q10-600" />} className="mb-6">
-            Crear Periodo
+            Crear {P}
           </CardTitle>
           <PeriodForm
             key={formVersion}
-            submitLabel="Guardar Periodo"
+            submitLabel={`Guardar ${P}`}
+            semestre={semestre}
             onSubmit={handleCreate}
             busy={busy}
           />
@@ -98,27 +104,29 @@ export const PeriodsTab: React.FC = () => {
 
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
-            <CardTitle className="">Periodos Académicos</CardTitle>
+            <CardTitle className="">{semestre ? 'Semestres' : 'Periodos Académicos'}</CardTitle>
             {openCount > 0 && (
               <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-                {openCount === 1 ? '1 periodo abierto' : `${openCount} periodos abiertos`}
+                {openCount === 1 ? `1 ${p_} abierto` : `${openCount} ${p_}s abiertos`}
               </span>
             )}
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12 text-gray-400">
-              <Loader2 className="h-6 w-6 animate-spin mr-2" /> Cargando periodos...
+              <Loader2 className="h-6 w-6 animate-spin mr-2" /> Cargando {p_}s...
             </div>
           ) : !error && periods.length === 0 ? (
             <EmptyMessage className="text-sm text-gray-500 flex items-center gap-2 justify-center py-8">
               <Lock className="h-4 w-4" />
-              Todavía no existen periodos académicos para esta institución. Crea el primero con el formulario.
+              {semestre
+                ? 'Todavía no hay semestres. Crea el primero con el formulario.'
+                : 'Todavía no existen periodos académicos para esta institución. Crea el primero con el formulario.'}
             </EmptyMessage>
           ) : (
             <TableWrapper>
               <TableHead uppercase>
-                <th className="pb-3">Periodo</th>
+                <th className="pb-3">{P}</th>
                 <th className="pb-3">Año</th>
                 <th className="pb-3">Inicio</th>
                 <th className="pb-3">Fin</th>
@@ -129,7 +137,7 @@ export const PeriodsTab: React.FC = () => {
                 {periods.map(p => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="py-3 font-semibold text-gray-900 whitespace-nowrap">
-                      Periodo {p.numero}
+                      {semestre ? `${p.anio}-${p.numero}` : `Periodo ${p.numero}`}
                     </td>
                     <td className="py-3 text-gray-500">{p.anio}</td>
                     <td className="py-3 text-gray-500 whitespace-nowrap">{formatFecha(p.fecha_inicio)}</td>
@@ -146,7 +154,7 @@ export const PeriodsTab: React.FC = () => {
                         {!p.activo && (
                           <button
                             onClick={() => setConfirmAction({ kind: 'open', period: p })}
-                            title="Abrir periodo"
+                            title={`Abrir ${p_}`}
                             className="px-2.5 py-1 rounded text-xs border border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center gap-1"
                           >
                             <Unlock className="h-3 w-3" /> Abrir
@@ -155,21 +163,21 @@ export const PeriodsTab: React.FC = () => {
                         {p.activo && (
                           <button
                             onClick={() => setConfirmAction({ kind: 'close', period: p })}
-                            title="Cerrar periodo"
+                            title={`Cerrar ${p_}`}
                             className="px-2.5 py-1 rounded text-xs border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex items-center gap-1"
                           >
                             <Lock className="h-3 w-3" /> Cerrar
                           </button>
                         )}
                         <button
-                          onClick={() => setEditing(p)} title="Editar periodo"
+                          onClick={() => setEditing(p)} title={`Editar ${p_}`}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setConfirmAction({ kind: 'delete', period: p })}
-                          title="Eliminar periodo"
+                          title={`Eliminar ${p_}`}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -186,8 +194,9 @@ export const PeriodsTab: React.FC = () => {
 
       {editing && (
         <Modal onClose={() => setEditing(null)} size="lg">
-          <CardTitle className="mb-4">Editar Periodo</CardTitle>
+          <CardTitle className="mb-4">Editar {P}</CardTitle>
           <PeriodForm
+            semestre={semestre}
             initial={editing}
             submitLabel="Guardar Cambios"
             onSubmit={handleEditSubmit}
@@ -200,16 +209,16 @@ export const PeriodsTab: React.FC = () => {
       {confirmAction && (
         <PeriodConfirmModal
           title={
-            confirmAction.kind === 'open' ? 'Abrir periodo'
-              : confirmAction.kind === 'close' ? 'Cerrar periodo'
-              : 'Eliminar periodo'
+            confirmAction.kind === 'open' ? `Abrir ${p_}`
+              : confirmAction.kind === 'close' ? `Cerrar ${p_}`
+              : `Eliminar ${p_}`
           }
           message={
             confirmAction.kind === 'open'
-              ? 'Al abrir este periodo, cualquier otro periodo abierto de esta institución será cerrado automáticamente. ¿Deseas continuar?'
+              ? `Al abrir este ${p_}, cualquier otro ${p_} abierto de esta institución será cerrado automáticamente. ¿Deseas continuar?`
               : confirmAction.kind === 'close'
-              ? 'Al cerrar este periodo no quedará ningún periodo abierto en la institución. Los docentes no podrán crear evaluaciones hasta que abras otro. ¿Deseas continuar?'
-              : '¿Eliminar este periodo? Si tiene evaluaciones o notas asociadas, el sistema lo rechazará.'
+              ? `Al cerrar este ${p_} no quedará ningún ${p_} abierto en la institución. Los docentes no podrán crear evaluaciones hasta que abras otro. ¿Deseas continuar?`
+              : `¿Eliminar este ${p_}? Si tiene evaluaciones o notas asociadas, el sistema lo rechazará.`
           }
           confirmLabel={
             confirmAction.kind === 'open' ? 'Abrir'

@@ -7,6 +7,9 @@ import { EditAssignmentModal } from '../super-admin/EditAssignmentModal';
 import { EditStudentGradeModal } from '../super-admin/EditStudentGradeModal';
 import { useApp } from '../../../context/useApp';
 import { compareStudents, fullName, gradeLabel, sortStudents, studentFullName } from '../../../lib/people';
+import { esCorporacion } from '../../../lib/corporacion';
+import { usePrograms } from './corporacion/usePrograms';
+import { SelectorGrupo } from './corporacion/SelectorGrupo';
 import type { Assignment, StudentGrade } from '../../../types';
 
 /** Asignaciones (docente + materia + grado) y matrículas de la institución del admin. */
@@ -26,6 +29,9 @@ export const AsignacionesTab: React.FC = () => {
   const [deletingStudentGrade, setDeletingStudentGrade] = useState<StudentGrade | null>(null);
 
   const instId = user?.institucion_id;
+  // Corporaciones: módulos y grupos, elegidos con filtros (programa, jornada, nivel).
+  const corp = esCorporacion(currentInstitution);
+  const { programs } = usePrograms(corp);
 
   const misDocentes = users.filter(u => u.rol === 'teacher' && u.institucion_id === instId && u.activo !== false);
   const misEstudiantesInst = sortStudents(users.filter(u => u.rol === 'student' && u.institucion_id === instId));
@@ -44,7 +50,7 @@ export const AsignacionesTab: React.FC = () => {
 
   const teacherName = (id: string) => fullName(users.find(u => u.id === id));
   const studentName = (id: string) => studentFullName(users.find(u => u.id === id));
-  const subjectName = (id: string) => subjects.find(s => s.id === id)?.nombre || 'Materia';
+  const subjectName = (id: string) => subjects.find(s => s.id === id)?.nombre || (corp ? 'Módulo' : 'Materia');
   const gradeName = (id: string) => gradeLabel(grades.find(g => g.id === id));
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
@@ -111,7 +117,7 @@ export const AsignacionesTab: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardTitle icon={<BookOpenCheck className="h-5 w-5 text-q10-600" />}>
-            Asignar Materia a Docente
+            {corp ? 'Asignar Módulo a Docente' : 'Asignar Materia a Docente'}
           </CardTitle>
           <form onSubmit={handleCreateAssignment} className="space-y-4 mt-4">
             <Field label="Docente">
@@ -120,18 +126,22 @@ export const AsignacionesTab: React.FC = () => {
                 {misDocentes.map(t => <option key={t.id} value={t.id}>{t.nombre} {t.apellido}</option>)}
               </select>
             </Field>
-            <Field label="Materia">
+            <Field label={corp ? 'Módulo' : 'Materia'}>
               <select required value={subjectId} onChange={e => setSubjectId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
                 {misMaterias.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </Field>
+            {corp ? (
+              <SelectorGrupo grupos={misGrados} programs={programs} value={gradeId} onChange={setGradeId} />
+            ) : (
             <Field label="Grado">
               <select required value={gradeId} onChange={e => setGradeId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
                 {misGrados.map(g => <option key={g.id} value={g.id}>{gradeName(g.id)}</option>)}
               </select>
             </Field>
+            )}
             <button type="submit" className={`w-full ${PRIMARY_BUTTON}`}>Guardar Asignación</button>
           </form>
 
@@ -182,12 +192,16 @@ export const AsignacionesTab: React.FC = () => {
                 {misEstudiantes.map(s => <option key={s.id} value={s.id}>{studentFullName(s)}</option>)}
               </select>
             </Field>
+            {corp ? (
+              <SelectorGrupo grupos={misGrados} programs={programs} value={studGradeId} onChange={setStudGradeId} />
+            ) : (
             <Field label="Grado">
               <select required value={studGradeId} onChange={e => setStudGradeId(e.target.value)} className={INPUT}>
                 <option value="">-- Seleccionar --</option>
                 {misGrados.map(g => <option key={g.id} value={g.id}>{gradeName(g.id)}</option>)}
               </select>
             </Field>
+            )}
             <button type="submit" className={`w-full ${PRIMARY_BUTTON}`}>Matricular</button>
           </form>
 

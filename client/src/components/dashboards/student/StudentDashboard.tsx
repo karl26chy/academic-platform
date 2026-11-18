@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, CheckSquare, AlertTriangle, History, Mail, ShieldAlert } from 'lucide-react';
+import { Award, CheckSquare, AlertTriangle, FileText, History, Mail, ShieldAlert } from 'lucide-react';
 import { useApp } from '../../../context/useApp';
 import { useMessaging } from '../../../hooks/useMessaging';
 import { Tabs, type TabItem } from '../../ui';
@@ -9,8 +9,10 @@ import { GradesTab } from './GradesTab';
 import { AttendanceTab } from './AttendanceTab';
 import { CitationsTab } from './CitationsTab';
 import { AcademicHistoryView } from './AcademicHistoryView';
+import { CertificadosTab } from './CertificadosTab';
+import { esCorporacion } from '../../../lib/corporacion';
 
-type StudentTab = 'grades' | 'attendance' | 'citations' | 'history' | 'messages';
+type StudentTab = 'grades' | 'attendance' | 'citations' | 'history' | 'messages' | 'certificados';
 
 export const StudentDashboard: React.FC = () => {
   const { navigateToTab, setNavigateToTab } = useApp();
@@ -44,6 +46,9 @@ export const StudentDashboard: React.FC = () => {
     { id: 'citations', label: `Citaciones (${myCitations.length})`, icon: <AlertTriangle className="h-4 w-4" /> },
     { id: 'messages', label: 'Mensajería', icon: <Mail className="h-4 w-4" />, badge: messaging.unreadIncoming },
   ];
+  // Corporaciones: el documento oficial es el certificado PDF que sube la institución.
+  const corporacion = esCorporacion(currentInstitution);
+  if (corporacion) tabs.push({ id: 'certificados', label: 'Certificados', icon: <FileText className="h-4 w-4" /> });
 
   const recipients = myTeachers.map(t => ({
     id: t.id,
@@ -58,7 +63,9 @@ export const StudentDashboard: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900"></h2>
           <p className="text-gray-500 text-sm">
-            {myGrade ? `Grado: ${myGrade.nombre} "${myGrade.tipo_grado}"` : 'No asignado a un grado aún.'}
+            {corporacion
+              ? (myGrade ? `Grupo: ${myGrade.nombre}` : 'No asignado a un grupo aún.')
+              : (myGrade ? `Grado: ${myGrade.nombre} "${myGrade.tipo_grado}"` : 'No asignado a un grado aún.')}
           </p>
         </div>
 
@@ -98,6 +105,8 @@ export const StudentDashboard: React.FC = () => {
           periodLabelOf={periodLabelOf}
         />
       )}
+
+      {corporacion && activeTab === 'certificados' && user && <CertificadosTab studentId={user.id} />}
 
       {activeTab === 'history' && user && (
         <AcademicHistoryView studentId={user.id} student={user} hideExport />

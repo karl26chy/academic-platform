@@ -548,3 +548,39 @@ export async function deleteStudentWithData(studentId) {
   }
 }
 
+
+// --- Corporaciones: programas y grupos --------------------------------------
+
+/** Nombres de los programas de una institución (excepto `excludeId`). */
+export async function programNamesOf(institucionId, excludeId = null) {
+  const { rows } = await pool.query(
+    'SELECT nombre FROM programs WHERE institucion_id = $1 AND ($2::text IS NULL OR id <> $2)',
+    [institucionId, excludeId]
+  );
+  return rows.map(r => r.nombre);
+}
+
+/** ¿Ya existe el grupo programa + jornada + nivel? (excepto `excludeId`). */
+export async function groupDuplicateOf({ programaId, jornada, nivel, excludeId = null }) {
+  const { rows } = await pool.query(
+    `SELECT id FROM grades
+     WHERE programa_id = $1 AND jornada = $2 AND COALESCE(nivel, 0) = COALESCE($3::int, 0)
+       AND ($4::text IS NULL OR id <> $4)
+     LIMIT 1`,
+    [programaId, jornada, nivel, excludeId]
+  );
+  return rows[0] || null;
+}
+
+/** Grupos de un programa (para renombrarlos o impedir borrar el programa). */
+export async function groupsOfProgram(programaId) {
+  const { rows } = await pool.query(
+    'SELECT id, jornada, nivel FROM grades WHERE programa_id = $1',
+    [programaId]
+  );
+  return rows;
+}
+
+export async function renameGroup(gradeId, nombre) {
+  await pool.query('UPDATE grades SET nombre = $1 WHERE id = $2', [nombre, gradeId]);
+}

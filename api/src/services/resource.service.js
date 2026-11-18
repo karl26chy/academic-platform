@@ -6,6 +6,7 @@ import { validateRow } from '../validators/index.js';
 import { notFound, HttpError } from '../shared/http-error.js';
 import { hash } from '../shared/password.js';
 import { forgetUserState } from '../repositories/session.repository.js';
+import { nombreGrupo } from '../shared/corporacion.js';
 
 /**
  * Casos de uso sobre cualquier recurso del catálogo.
@@ -90,6 +91,12 @@ export async function replace(resource, id, body, user) {
   if (!row) throw notFound();
   // Rol, institución o activo pueden haber cambiado: la sesión se relee.
   if (resource === 'users') forgetUserState(id);
+  // Corporaciones: el nombre de cada grupo incluye el del programa.
+  if (resource === 'programs' && data.nombre !== undefined && data.nombre !== existing.nombre) {
+    for (const g of await repo.groupsOfProgram(id)) {
+      await repo.renameGroup(g.id, nombreGrupo(row, g.jornada, g.nivel));
+    }
+  }
   return row;
 }
 
@@ -145,6 +152,13 @@ async function destroyRow(resource, id, user) {
   if (!existing) throw notFound();
 
   await authorizeWrite(resource, {}, existing, user, 'delete');
+
+  if (resource === 'programs') {
+    const grupos = await repo.groupsOfProgram(id);
+    if (grupos.length > 0) {
+      throw new HttpError(409, `No se puede eliminar el programa porque tiene ${grupos.length} grupo(s). Desactívalo en su lugar.`);
+    }
+  }
 
   if (resource === 'institutions') {
     const deps = await repo.countInstitutionDependencies(id);

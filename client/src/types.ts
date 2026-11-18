@@ -38,7 +38,33 @@ export interface Grade {
   id: string;
   institucion_id: string;
   nombre: string;
-  tipo_grado: string;
+  /** Colegios: "A", "B"... En las corporaciones es null. */
+  tipo_grado: string | null;
+  /** Solo corporaciones: el grupo es programa + jornada + nivel. */
+  programa_id?: string | null;
+  jornada?: Jornada | null;
+  nivel?: number | null;
+}
+
+export type TipoPrograma = 'tecnico' | 'curso_corto';
+export type Jornada = 'manana' | 'tarde' | 'noche' | 'fin_de_semana';
+
+/** Programa técnico o curso corto del catálogo de una corporación. */
+export interface Program {
+  id: string;
+  institucion_id: string;
+  nombre: string;
+  tipo: TipoPrograma;
+  activo: boolean;
+}
+
+/** Certificado PDF de un estudiante de corporación (sin el archivo). */
+export interface Certificate {
+  id: string;
+  estudiante_id: string;
+  titulo: string;
+  tamano: number;
+  created_at: string;
 }
 
 export interface Subject {

@@ -34,7 +34,10 @@ export const RESOURCES = {
     hidden: ['password'],
     secret: ['password'],
   },
-  grades: { cols: ['id', 'institucion_id', 'nombre', 'tipo_grado'] },
+  // En una corporación un "grado" es un grupo: programa + jornada + nivel.
+  grades: { cols: ['id', 'institucion_id', 'nombre', 'tipo_grado', 'programa_id', 'jornada', 'nivel'] },
+  // Catálogo de programas de una corporación (técnicos y cursos cortos).
+  programs: { cols: ['id', 'institucion_id', 'nombre', 'tipo', 'activo'] },
   subjects: { cols: ['id', 'institucion_id', 'nombre', 'descripcion'] },
   assignments: { cols: ['id', 'profesor_id', 'materia_id', 'grado_id', 'institucion_id'] },
   student_grades: { cols: ['id', 'estudiante_id', 'grado_id'] },

@@ -23,7 +23,8 @@ interface StudentDetailProps {
   attendanceRate: number;
   getSubjectName: (subjectId: string) => string;
   /** Abre la generación del boletín individual por período. */
-  onGenerateReport: (student: User) => void;
+  /** Sin esto no se ofrece boletín (las corporaciones usan certificados). */
+  onGenerateReport?: (student: User) => void;
 }
 
 /**
@@ -75,13 +76,13 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
               <div className="text-2xl font-bold leading-tight">{average}</div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
+              {onGenerateReport && <button
                 onClick={() => onGenerateReport(student)}
                 title="Generar boletín por período de este estudiante"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-medium transition-colors"
               >
                 <FileText className="h-3.5 w-3.5" /> Generar boletín
-              </button>
+              </button>}
               <button
                 onClick={() => setShowHistory(v => !v)}
                 title="Ver historial académico"

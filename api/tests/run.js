@@ -21,6 +21,7 @@ import studentsSuite from './suites/students.js';
 import reportsSuite from './suites/reports.js';
 import evaluationsSuite from './suites/evaluations.js';
 import securitySuite from './suites/security.js';
+import corporationsSuite from './suites/corporations.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(here, '..');
@@ -129,6 +130,7 @@ async function main() {
     await studentsSuite(world);
     await reportsSuite(world);
     await evaluationsSuite(world);
+    await corporationsSuite(world);
     // Al final: reproduce ataques y modifica periodos/usuarios propios.
     await securitySuite(world);
 

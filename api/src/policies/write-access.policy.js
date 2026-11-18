@@ -78,6 +78,7 @@ const writeAccessByResource = {
   },
 
   grades: soloAdminDeLaInstitucion,
+  programs: soloAdminDeLaInstitucion,
   subjects: (ctx) => {
     if (ctx.rol !== 'admin') denegar('Solo un administrador puede gestionar materias de su institución.');
     // Nunca confiar en un institucion_id enviado por el frontend: la materia
@@ -156,6 +157,7 @@ const writeAccessByResource = {
 const institucionDeLaFila = {
   users: (row) => row.institucion_id,
   grades: (row) => row.institucion_id,
+  programs: (row) => row.institucion_id,
   subjects: (row) => row.institucion_id,
   assignments: (row) => row.institucion_id,
   evaluations: (row) => row.institucion_id,
